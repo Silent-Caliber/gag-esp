@@ -1,71 +1,138 @@
--- Grow a Garden Plant ESP (Final Clean Version)
-local basePrices = {
-Carrot=20,Strawberry=20,Blueberry=20,OrangeTulip=750,Nightshade=2000,RedLollipop=70000,
-Tomato=30,Corn=40,Raspberry=60,Glowshroom=175,Daffodil=1000,Mint=6000,CandySunflower=145000,
-Apple=275,Papaya=1000,Cranberry=1805,Watermelon=3000,Pumpkin=4000,Bamboo=4000,Durian=4513,
-Moonflower=8500,Starfruit=15538,Pear=80,Peach=271,Pineapple=350,Coconut=400,Lemon=500,
-Banana=3000,Passionfruit=3204,Cactus=3400,EasterEgg=4513,DragonFruit=4750,BloodBanana=5415,
-Mango=6500,Eggplant=6769,MoonMelon=16245,Moonglow=18000,CherryBlossom=550,CandyBlossom=100000,
-Beanstalk=20000,Mushroom=136000,Pepper=7220,Grape=850000
-}
+-- Plant ESP with Selection UI
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+ 
+-- Utility: Get all plant types in workspace
+local function getAllPlantTypes()
+    local types = {}
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") then
+            for _, child in ipairs(model:GetChildren()) do
+                if child:IsA("StringValue") and child.Name:lower():find("type") then
+                    types[child.Value] = true
+                end
+            end
+        end
+    end
+    return types
+end
+ 
+-- UI Setup
+local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+ScreenGui.Name = "PlantESPSelector"
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 200, 0, 400)
+Frame.Position = UDim2.new(0, 10, 0, 100)
+Frame.BackgroundTransparency = 0.2
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.Active = true
+Frame.Draggable = true
+ 
+local UIListLayout = Instance.new("UIListLayout", Frame)
+UIListLayout.Padding = UDim.new(0, 4)
+ 
+local selectedTypes = {}
+ 
+-- Create toggles for each plant type
+local function createToggles()
+    for _, child in ipairs(Frame:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+    local types = getAllPlantTypes()
+    for plantType, _ in pairs(types) do
+        local btn = Instance.new("TextButton", Frame)
+        btn.Size = UDim2.new(1, -10, 0, 28)
+        btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        btn.TextColor3 = Color3.new(1, 1, 1)
+        btn.Text = "[OFF] " .. plantType
+        btn.AutoButtonColor = true
+        btn.MouseButton1Click:Connect(function()
+            selectedTypes[plantType] = not selectedTypes[plantType]
+            btn.Text = (selectedTypes[plantType] and "[ON] " or "[OFF] ") .. plantType
+        end)
+    end
+end
+ 
+createToggles()
+ 
+-- Refresh toggles every 10 seconds in case new types appear
+spawn(function()
+    while true do
+        wait(10)
+        createToggles()
+    end
+end)
+ 
+-- ESP Core
 local espMap = {}
-local function calcPrice(w,b,m) m=m or 1 return math.floor(w*b*m) end
-local function getPP(p)
- if p.PrimaryPart then return p.PrimaryPart end
- for _,c in pairs(p:GetChildren()) do
-  if c:IsA("BasePart") then p.PrimaryPart=c return c end
- end
- return nil
+ 
+local function getPP(model)
+    if model.PrimaryPart then return model.PrimaryPart end
+    for _,c in ipairs(model:GetChildren()) do
+        if c:IsA("BasePart") then
+            model.PrimaryPart = c
+            return c
+        end
+    end
+    return nil
 end
-local function createESP(p)
- if espMap[p] then return espMap[p] end
- local pp=getPP(p)
- if not pp then return end
- local bg=Instance.new("BillboardGui",p)
- bg.Name="PlantESP"
- bg.Adornee=pp
- bg.Size=UDim2.new(0,160,0,50)
- bg.StudsOffset=Vector3.new(0,3,0)
- bg.AlwaysOnTop=true
- local tl=Instance.new("TextLabel",bg)
- tl.Size=UDim2.new(1,0,1,0)
- tl.BackgroundTransparency=1
- tl.TextColor3=Color3.new(1,1,1)
- tl.TextStrokeColor3=Color3.new(0,0,0)
- tl.TextStrokeTransparency=0
- tl.Font=Enum.Font.SourceSansBold
- tl.TextSize=14
- tl.TextWrapped=true
- for _,v in pairs(tl:GetChildren()) do
-  if v:IsA("UISizeConstraint") then v:Destroy() end
- end
- espMap[p]=tl
- return tl
+ 
+local function createESP(model, labelText)
+    if espMap[model] then return espMap[model] end
+    local pp = getPP(model)
+    if not pp then return end
+    local bg = Instance.new("BillboardGui", model)
+    bg.Name = "PlantESP"
+    bg.Adornee = pp
+    bg.Size = UDim2.new(0, 160, 0, 50)
+    bg.StudsOffset = Vector3.new(0, 5, 0)
+    bg.AlwaysOnTop = true
+    local tl = Instance.new("TextLabel", bg)
+    tl.Size = UDim2.new(1, 0, 1, 0)
+    tl.BackgroundTransparency = 1
+    tl.TextColor3 = Color3.new(1, 1, 1)
+    tl.TextStrokeColor3 = Color3.new(0, 0, 0)
+    tl.TextStrokeTransparency = 0
+    tl.Font = Enum.Font.SourceSansBold
+    tl.TextSize = 14
+    tl.TextWrapped = true
+    tl.Text = labelText
+    espMap[model] = tl
+    return tl
 end
+ 
 local function cleanup()
- for p,g in pairs(espMap) do
-  if not p.Parent or not getPP(p) then
-   if g.Parent then g.Parent:Destroy() end
-   espMap[p]=nil
-  end
- end
+    for model, gui in pairs(espMap) do
+        if not model.Parent or not getPP(model) then
+            if gui.Parent then gui.Parent:Destroy() end
+            espMap[model] = nil
+        end
+    end
 end
+ 
 local function update()
- cleanup()
- for _,p in pairs(workspace:GetDescendants()) do
-  if p:IsA("Model") and p:FindFirstChild("Weight") and p:FindFirstChild("CropType") then
-   local pp=getPP(p)
-   if pp then
-    local w=p.Weight.Value or 0
-    local c=p.CropType.Value or "Unknown"
-    local b=basePrices[c] or 10
-    local m=1
-    local sp=calcPrice(w,b,m)
-    local tl=createESP(p)
-    if tl then tl.Text=string.format("%s\nWeight: %.2f\nSell Price: %d Sheckles",c,w,sp) end
-   end
-  end
- end
+    cleanup()
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") then
+            local cropType = nil
+            local weight = nil
+            for _, child in ipairs(model:GetChildren()) do
+                if child:IsA("StringValue") and child.Name:lower():find("type") then
+                    cropType = child.Value
+                elseif child:IsA("NumberValue") and child.Name:lower():find("weight") then
+                    weight = child.Value
+                end
+            end
+            if cropType and selectedTypes[cropType] then
+                local label = cropType
+                if weight then
+                    label = label .. "\nWeight: " .. tostring(weight)
+                end
+                createESP(model, label)
+            end
+        end
+    end
 end
+ 
 RunService.Heartbeat:Connect(update)
