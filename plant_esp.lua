@@ -1,6 +1,5 @@
-local P=game:GetService("Players").LocalPlayer
-local R=game:GetService("RunService")
-local basePrices={
+-- Grow a Garden Plant ESP (Final Clean Version)
+local basePrices = {
 Carrot=20,Strawberry=20,Blueberry=20,OrangeTulip=750,Nightshade=2000,RedLollipop=70000,
 Tomato=30,Corn=40,Raspberry=60,Glowshroom=175,Daffodil=1000,Mint=6000,CandySunflower=145000,
 Apple=275,Papaya=1000,Cranberry=1805,Watermelon=3000,Pumpkin=4000,Bamboo=4000,Durian=4513,
@@ -9,7 +8,8 @@ Banana=3000,Passionfruit=3204,Cactus=3400,EasterEgg=4513,DragonFruit=4750,BloodB
 Mango=6500,Eggplant=6769,MoonMelon=16245,Moonglow=18000,CherryBlossom=550,CandyBlossom=100000,
 Beanstalk=20000,Mushroom=136000,Pepper=7220,Grape=850000
 }
-local espMap={}
+local RunService = game:GetService("RunService")
+local espMap = {}
 local function calcPrice(w,b,m) m=m or 1 return math.floor(w*b*m) end
 local function getPP(p)
  if p.PrimaryPart then return p.PrimaryPart end
@@ -37,7 +37,6 @@ local function createESP(p)
  tl.Font=Enum.Font.SourceSansBold
  tl.TextSize=14
  tl.TextWrapped=true
- -- Fix: Remove any UISizeConstraint to prevent warning
  for _,v in pairs(tl:GetChildren()) do
   if v:IsA("UISizeConstraint") then v:Destroy() end
  end
@@ -69,4 +68,4 @@ local function update()
   end
  end
 end
-R.Heartbeat:Connect(update)
+RunService.Heartbeat:Connect(update)
