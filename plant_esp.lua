@@ -37,6 +37,10 @@ local function createESP(p)
  tl.Font=Enum.Font.SourceSansBold
  tl.TextSize=14
  tl.TextWrapped=true
+ -- Fix: Remove any UISizeConstraint to prevent warning
+ for _,v in pairs(tl:GetChildren()) do
+  if v:IsA("UISizeConstraint") then v:Destroy() end
+ end
  espMap[p]=tl
  return tl
 end
