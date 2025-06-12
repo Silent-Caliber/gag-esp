@@ -5,8 +5,13 @@ local LocalPlayer = Players.LocalPlayer
 local espMap = {}
 
 -- Replace these with your game's actual RemoteEvent names
-local PlaceSprinklerEvent = ReplicatedStorage:WaitForChild("PlaceSprinkler")
-local ShovelRemoveEvent = ReplicatedStorage:WaitForChild("ShovelRemove")
+local PlaceSprinklerEvent = ReplicatedStorage:FindFirstChild("PlaceSprinkler")
+local ShovelRemoveEvent = ReplicatedStorage:FindFirstChild("ShovelRemove")
+
+if not PlaceSprinklerEvent or not ShovelRemoveEvent then
+    warn("PlaceSprinkler or ShovelRemove RemoteEvents not found! Check event names.")
+    return
+end
 
 local basicSprinklerName = "Basic Sprinkler" -- exact name of basic sprinkler model
 
@@ -69,13 +74,11 @@ local function getCategorizedTypes()
     return cropsByCategory
 end
 
--- UI Sizes (adjusted for Infinite Sprinkler row)
-local normalSize = UDim2.new(0, 340, 0, 250) -- +30 height
-local compactSize = UDim2.new(0, 210, 0, 160) -- +30 height
+local normalSize = UDim2.new(0, 340, 0, 250)
+local compactSize = UDim2.new(0, 210, 0, 160)
 local normalPos = UDim2.new(0, 10, 0, 60)
 local compactPos = UDim2.new(0, 10, 0, 20)
 
--- UI Setup
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PlantESPSelector"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
@@ -211,7 +214,6 @@ NearbyScroll.ScrollBarThickness = 2
 local NearbyListLayout = Instance.new("UIListLayout", NearbyScroll)
 NearbyListLayout.Padding = UDim.new(0, 1)
 
--- Infinite Sprinkler UI Row (below NearbyFrame)
 local SprinklerFrame = Instance.new("Frame", Frame)
 SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
 SprinklerFrame.Position = UDim2.new(0, 65, 1, -28)
@@ -309,7 +311,6 @@ spawn(function()
     end
 end)
 
--- Toggle UI Button (top left)
 local function createToggleBtn(screenGui, frame)
     if screenGui:FindFirstChild("ShowHideESPBtn") then
         screenGui.ShowHideESPBtn:Destroy()
@@ -352,7 +353,6 @@ end
 
 createToggleBtn(ScreenGui, Frame)
 
--- UI Size Toggle Button (top right)
 local function createSizeToggleBtn(frame)
     if frame:FindFirstChild("SizeToggleBtn") then
         frame.SizeToggleBtn:Destroy()
@@ -407,7 +407,6 @@ end
 
 createSizeToggleBtn(Frame)
 
--- ESP Core
 local function getPP(model)
     if model.PrimaryPart then return model.PrimaryPart end
     for _,c in ipairs(model:GetChildren()) do
@@ -534,8 +533,6 @@ local function update()
     updateNearbyPlants()
 end
 
--- Infinite Sprinkler Logic
-
 local infiniteSprinklerEnabled = false
 
 local function useShovelOn(model)
@@ -544,11 +541,8 @@ end
 
 local function rapidPlaceRemoveBasicSprinkler()
     for i = 1, 5 do
-        -- Place basic sprinkler
         PlaceSprinklerEvent:FireServer(basicSprinklerName)
         wait(0.1)
-        
-        -- Remove nearby basic sprinklers using shovel
         local char = LocalPlayer.Character
         local root = char and char:FindFirstChild("HumanoidRootPart")
         if root then
@@ -561,7 +555,6 @@ local function rapidPlaceRemoveBasicSprinkler()
                 end
             end
         end
-        
         wait(0.1)
     end
 end
