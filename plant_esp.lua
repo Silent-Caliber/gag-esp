@@ -510,6 +510,7 @@ local function update()
                     weight = child.Value
                 elseif child:IsA("NumberValue") and (child.Name:lower():find("price") or child.Name:lower():find("sell")) then
                     price = child.Value
+                    print("DEBUG: Found price for", model.Name, price) -- Debug print
                 end
             end
             local label = model.Name
