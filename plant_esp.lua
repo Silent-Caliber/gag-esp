@@ -506,11 +506,12 @@ local function update()
             local model = nearest[i].model
             local weight, price
             for _, child in ipairs(model:GetChildren()) do
+                print("DEBUG: Model", model.Name, "Child", child.Name, "Class", child.ClassName) -- Debug all children
                 if child:IsA("NumberValue") and child.Name:lower():find("weight") then
                     weight = child.Value
                 elseif child:IsA("NumberValue") and (child.Name:lower():find("price") or child.Name:lower():find("sell")) then
                     price = child.Value
-                    print("DEBUG: Found price for", model.Name, price) -- Debug print
+                    print("DEBUG: Found price for", model.Name, price) -- Debug price found
                 end
             end
             local label = model.Name
