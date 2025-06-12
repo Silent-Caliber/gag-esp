@@ -1,19 +1,7 @@
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local espMap = {}
-
--- Replace these with your game's actual RemoteEvent names
-local PlaceSprinklerEvent = ReplicatedStorage:FindFirstChild("PlaceSprinkler")
-local ShovelRemoveEvent = ReplicatedStorage:FindFirstChild("ShovelRemove")
-
-if not PlaceSprinklerEvent or not ShovelRemoveEvent then
-    warn("PlaceSprinkler or ShovelRemove RemoteEvents not found! Check event names.")
-    return
-end
-
-local basicSprinklerName = "Basic Sprinkler" -- exact name of basic sprinkler model
 
 local cropCategories = {
     Obtainable = {
@@ -74,11 +62,13 @@ local function getCategorizedTypes()
     return cropsByCategory
 end
 
-local normalSize = UDim2.new(0, 340, 0, 250)
-local compactSize = UDim2.new(0, 210, 0, 160)
+-- UI Sizes (adjusted for Infinite Sprinkler row)
+local normalSize = UDim2.new(0, 340, 0, 250) -- +30 height
+local compactSize = UDim2.new(0, 210, 0, 160) -- +30 height
 local normalPos = UDim2.new(0, 10, 0, 60)
 local compactPos = UDim2.new(0, 10, 0, 20)
 
+-- UI Setup
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PlantESPSelector"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
@@ -214,6 +204,7 @@ NearbyScroll.ScrollBarThickness = 2
 local NearbyListLayout = Instance.new("UIListLayout", NearbyScroll)
 NearbyListLayout.Padding = UDim.new(0, 1)
 
+-- Infinite Sprinkler UI Row (below NearbyFrame)
 local SprinklerFrame = Instance.new("Frame", Frame)
 SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
 SprinklerFrame.Position = UDim2.new(0, 65, 1, -28)
@@ -311,6 +302,7 @@ spawn(function()
     end
 end)
 
+-- Toggle UI Button (top left)
 local function createToggleBtn(screenGui, frame)
     if screenGui:FindFirstChild("ShowHideESPBtn") then
         screenGui.ShowHideESPBtn:Destroy()
@@ -353,6 +345,7 @@ end
 
 createToggleBtn(ScreenGui, Frame)
 
+-- UI Size Toggle Button (top right)
 local function createSizeToggleBtn(frame)
     if frame:FindFirstChild("SizeToggleBtn") then
         frame.SizeToggleBtn:Destroy()
@@ -407,6 +400,7 @@ end
 
 createSizeToggleBtn(Frame)
 
+-- ESP Core
 local function getPP(model)
     if model.PrimaryPart then return model.PrimaryPart end
     for _,c in ipairs(model:GetChildren()) do
@@ -533,29 +527,30 @@ local function update()
     updateNearbyPlants()
 end
 
+-- Infinite Sprinkler Logic
 local infiniteSprinklerEnabled = false
 
-local function useShovelOn(model)
-    ShovelRemoveEvent:FireServer(model)
-end
+local function sprinklerAction()
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
 
-local function rapidPlaceRemoveBasicSprinkler()
-    for i = 1, 5 do
-        PlaceSprinklerEvent:FireServer(basicSprinklerName)
-        wait(0.1)
-        local char = LocalPlayer.Character
-        local root = char and char:FindFirstChild("HumanoidRootPart")
-        if root then
-            for _, model in ipairs(workspace:GetDescendants()) do
-                if model:IsA("Model") and model.Name == basicSprinklerName then
-                    local pp = getPP(model)
-                    if pp and (pp.Position - root.Position).Magnitude <= 10 then
-                        useShovelOn(model)
+    local range = 15
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") and cropSet[model.Name:lower()] then
+            local pp = getPP(model)
+            if pp then
+                local dist = (pp.Position - root.Position).Magnitude
+                if dist <= range then
+                    -- Replace this with your game's actual watering method
+                    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+                    local WaterEvent = ReplicatedStorage:FindFirstChild("WaterPlant")
+                    if WaterEvent and WaterEvent:IsA("RemoteEvent") then
+                        WaterEvent:FireServer(model)
                     end
                 end
             end
         end
-        wait(0.1)
     end
 end
 
@@ -563,14 +558,14 @@ SprinklerToggleBtn.MouseButton1Click:Connect(function()
     infiniteSprinklerEnabled = not infiniteSprinklerEnabled
     SprinklerToggleBtn.Text = infiniteSprinklerEnabled and "ON" or "OFF"
     SprinklerToggleBtn.BackgroundColor3 = infiniteSprinklerEnabled and Color3.fromRGB(80, 200, 80) or Color3.fromRGB(50, 50, 50)
+end)
 
-    if infiniteSprinklerEnabled then
-        spawn(function()
-            while infiniteSprinklerEnabled do
-                rapidPlaceRemoveBasicSprinkler()
-                wait(1)
-            end
-        end)
+spawn(function()
+    while true do
+        if infiniteSprinklerEnabled then
+            sprinklerAction()
+        end
+        wait(3)
     end
 end)
 
