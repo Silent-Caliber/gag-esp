@@ -1,13 +1,8 @@
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local espMap = {}
 
-local plantPrices = {}
-local selectedTypes = {} -- Your existing selectedTypes table
-local espMap = {} -- Your existing espMap table
-
--- Your existing crop categories and colors table
 local cropCategories = {
     Obtainable = {
         Common = {"Carrot", "Strawberry"},
@@ -27,6 +22,7 @@ local cropCategories = {
         Divine = {"Cherry Blossom", "Crimson Vine", "Candy Blossom", "Lotus", "Venus Fly Trap", "Cursed Fruit", "Soul Fruit", "Mega Mushroom", "Moon Blossom", "Moon Mango"},
     }
 }
+
 local cropSet = {}
 for obtain, rarities in pairs(cropCategories) do
     for rarity, crops in pairs(rarities) do
@@ -35,6 +31,7 @@ for obtain, rarities in pairs(cropCategories) do
         end
     end
 end
+
 local rarityOrder = {"Common","Uncommon","Rare","Legendary","Mythical","Divine","Prismatic"}
 local rarityColors = {
     Common = Color3.fromRGB(180, 180, 180),
@@ -45,6 +42,7 @@ local rarityColors = {
     Divine = Color3.fromRGB(255, 90, 90),
     Prismatic = Color3.fromRGB(100,255,255),
 }
+
 local function getCategorizedTypes()
     local cropsByCategory = {}
     for obtain, rarities in pairs(cropCategories) do
@@ -64,13 +62,13 @@ local function getCategorizedTypes()
     return cropsByCategory
 end
 
-
--- UI Sizes and setup (same as your original code) --
-local normalSize = UDim2.new(0, 340, 0, 250)
-local compactSize = UDim2.new(0, 210, 0, 160)
+-- UI Sizes (adjusted for Infinite Sprinkler row)
+local normalSize = UDim2.new(0, 340, 0, 250) -- +30 height
+local compactSize = UDim2.new(0, 210, 0, 160) -- +30 height
 local normalPos = UDim2.new(0, 10, 0, 60)
 local compactPos = UDim2.new(0, 10, 0, 20)
 
+-- UI Setup
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PlantESPSelector"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
@@ -206,6 +204,7 @@ NearbyScroll.ScrollBarThickness = 2
 local NearbyListLayout = Instance.new("UIListLayout", NearbyScroll)
 NearbyListLayout.Padding = UDim.new(0, 1)
 
+-- Infinite Sprinkler UI Row (below NearbyFrame)
 local SprinklerFrame = Instance.new("Frame", Frame)
 SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
 SprinklerFrame.Position = UDim2.new(0, 65, 1, -28)
@@ -303,6 +302,7 @@ spawn(function()
     end
 end)
 
+-- Toggle UI Button (top left)
 local function createToggleBtn(screenGui, frame)
     if screenGui:FindFirstChild("ShowHideESPBtn") then
         screenGui.ShowHideESPBtn:Destroy()
@@ -345,6 +345,7 @@ end
 
 createToggleBtn(ScreenGui, Frame)
 
+-- UI Size Toggle Button (top right)
 local function createSizeToggleBtn(frame)
     if frame:FindFirstChild("SizeToggleBtn") then
         frame.SizeToggleBtn:Destroy()
@@ -399,6 +400,7 @@ end
 
 createSizeToggleBtn(Frame)
 
+-- ESP Core
 local function getPP(model)
     if model.PrimaryPart then return model.PrimaryPart end
     for _,c in ipairs(model:GetChildren()) do
@@ -482,172 +484,50 @@ local function updateNearbyPlants()
     end
 end
 
-
--- Generic Remote Logger and Price Catcher
-local function setupRemoteLogger()
-    -- Connect to any new remotes that appear in ReplicatedStorage
-    ReplicatedStorage.ChildAdded:Connect(function(child)
-        if child:IsA("RemoteEvent") then
-            child.OnClientEvent:Connect(function(...)
-                local args = {...}
-                print(string.format("[RemoteEvent] %s (OnClientEvent) - Args: %s", child.Name, game:GetService("HttpService"):JSONEncode(args)))
-                -- Try to deduce price/plantName from arguments
-                -- This is a heuristic and might need to be refined based on actual data
-                if #args >= 2 and type(args[1]) == "string" and type(args[2]) == "number" then
-                    -- Simple heuristic: first arg is plant name (string), second is price (number)
-                    plantPrices[args[1]] = args[2]
-                elseif #args >= 1 and type(args[1]) == "table" then
-                    -- Heuristic: if a table is passed, look for 'name'/'PlantName' and 'price'/'Price'/'Value'
-                    if (args[1].name or args[1].PlantName) and (args[1].price or args[1].Price or args[1].Value) then
-                        local pName = args[1].name or args[1].PlantName
-                        local pVal = args[1].price or args[1].Price or args[1].Value
-                        if type(pName) == "string" and type(pVal) == "number" then
-                            plantPrices[pName] = pVal
-                            print(string.format("Captured PRICE for %s: %s (from RemoteEvent: %s)", pName, pVal, child.Name))
-                        end
-                    end
-                end
-            end)
-        elseif child:IsA("RemoteFunction") then
-            local oldInvokeServer = child.InvokeServer
-            child.InvokeServer = function(self, ...)
-                local args = {...}
-                print(string.format("[RemoteFunction] %s (InvokeServer) - Args: %s", child.Name, game:GetService("HttpService"):JSONEncode(args)))
-                local result = oldInvokeServer(self, unpack(args))
-                print(string.format("[RemoteFunction] %s (InvokeServer) - Result: %s", child.Name, game:GetService("HttpService"):JSONEncode(result)))
-                
-                -- Try to deduce price/plantName from result
-                if type(result) == "table" then
-                    if (result.name or result.PlantName) and (result.price or result.Price or result.Value) then
-                        local pName = result.name or result.PlantName
-                        local pVal = result.price or result.Price or result.Value
-                        if type(pName) == "string" and type(pVal) == "number" then
-                            plantPrices[pName] = pVal
-                            print(string.format("Captured PRICE for %s: %s (from RemoteFunction: %s)", pName, pVal, child.Name))
-                        end
-                    end
-                elseif #args >=1 and type(args[1]) == "string" and type(result) == "number" then
-                     -- Heuristic: if 1st arg is a string (plant name) and result is a number (price)
-                    plantPrices[args[1]] = result
-                    print(string.format("Captured PRICE for %s: %s (from RemoteFunction: %s)", args[1], result, child.Name))
-                end
-                return result
-            end
-        end
-    end)
-
-    -- Also iterate existing children in ReplicatedStorage
-    for _, child in ipairs(ReplicatedStorage:GetChildren()) do
-        setupRemoteLogger(child) -- Recursively call for existing children (initial scan)
-    end
-end
-
--- Function to handle initial children (to avoid re-calling setupRemoteLogger)
-local function setupRemoteLoggerInitial(child)
-    if child:IsA("RemoteEvent") then
-        child.OnClientEvent:Connect(function(...)
-            local args = {...}
-            print(string.format("[Initial RemoteEvent] %s (OnClientEvent) - Args: %s", child.Name, game:GetService("HttpService"):JSONEncode(args)))
-            if #args >= 2 and type(args[1]) == "string" and type(args[2]) == "number" then
-                plantPrices[args[1]] = args[2]
-            elseif #args >= 1 and type(args[1]) == "table" then
-                if (args[1].name or args[1].PlantName) and (args[1].price or args[1].Price or args[1].Value) then
-                    local pName = args[1].name or args[1].PlantName
-                    local pVal = args[1].price or args[1].Price or args[1].Value
-                    if type(pName) == "string" and type(pVal) == "number" then
-                        plantPrices[pName] = pVal
-                        print(string.format("Captured PRICE for %s: %s (from Initial RemoteEvent: %s)", pName, pVal, child.Name))
-                    end
-                end
-            end
-        end)
-    elseif child:IsA("RemoteFunction") then
-        local oldInvokeServer = child.InvokeServer
-        child.InvokeServer = function(self, ...)
-            local args = {...}
-            print(string.format("[Initial RemoteFunction] %s (InvokeServer) - Args: %s", child.Name, game:GetService("HttpService"):JSONEncode(args)))
-            local result = oldInvokeServer(self, unpack(args))
-            print(string.format("[Initial RemoteFunction] %s (InvokeServer) - Result: %s", child.Name, game:GetService("HttpService"):JSONEncode(result)))
-            if type(result) == "table" then
-                if (result.name or result.PlantName) and (result.price or result.Price or result.Value) then
-                    local pName = result.name or result.PlantName
-                    local pVal = result.price or result.Price or result.Value
-                    if type(pName) == "string" and type(pVal) == "number" then
-                        plantPrices[pName] = pVal
-                        print(string.format("Captured PRICE for %s: %s (from Initial RemoteFunction: %s)", pName, pVal, child.Name))
-                    end
-                end
-            elseif #args >=1 and type(args[1]) == "string" and type(result) == "number" then
-                plantPrices[args[1]] = result
-                print(string.format("Captured PRICE for %s: %s (from Initial RemoteFunction: %s)", args[1], result, child.Name))
-            end
-            return result
-        end
-    end
-end
-
--- Iterate existing children once
-for _, child in ipairs(ReplicatedStorage:GetChildren()) do
-    setupRemoteLoggerInitial(child)
-end
--- Connect ChildAdded to log new remotes
-ReplicatedStorage.ChildAdded:Connect(setupRemoteLoggerInitial)
-
-
--- Main ESP update function
 local function update()
     local validModels = {}
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-
     local nearest = {}
-
-    for _, model in ipairs(workspace:GetDescendants()) do
-        if model:IsA("Model") and selectedTypes[model.Name] then
-            local pp = getPP(model)
-            if pp then
-                local dist = (pp.Position - root.Position).Magnitude
-                if dist <= maxDistance then
-                    table.insert(nearest, {model=model, dist=dist})
+    if root then
+        for _, model in ipairs(workspace:GetDescendants()) do
+            if model:IsA("Model") and selectedTypes[model.Name] then
+                local pp = getPP(model)
+                if pp then
+                    local dist = (pp.Position - root.Position).Magnitude
+                    if dist <= maxDistance then
+                        table.insert(nearest, {model=model, dist=dist})
+                    end
                 end
             end
         end
-    end
-
-    table.sort(nearest, function(a,b) return a.dist < b.dist end)
-
-    for i = 1, math.min(#nearest, maxESP) do
-        local model = nearest[i].model
-        local weight
-        for _, child in ipairs(model:GetChildren()) do
-            if child:IsA("NumberValue") and child.Name:lower():find("weight") then
-                weight = child.Value
-                break
+        table.sort(nearest, function(a, b) return a.dist < b.dist end)
+        for i = 1, math.min(#nearest, maxESP) do
+            local model = nearest[i].model
+            local weight, price
+            for _, child in ipairs(model:GetChildren()) do
+                if child:IsA("NumberValue") and child.Name:lower():find("weight") then
+                    weight = child.Value
+                elseif child:IsA("NumberValue") and (child.Name:lower():find("price") or child.Name:lower():find("sell")) then
+                    price = child.Value
+                end
             end
+            local label = model.Name
+            if weight then
+                label = label .. "\nWt.: " .. tostring(weight)
+            end
+            if price then
+                label = label .. "\nSell Price: " .. tostring(price)
+            end
+            createESP(model, label)
+            validModels[model] = true
         end
-
-        local label = model.Name
-        if weight then
-            label = label .. "\nWt.: " .. tostring(weight)
-        end
-
-        -- Use the price captured by the remote logger
-        local price = plantPrices[model.Name]
-        if price then
-            label = label .. "\nPrice: " .. tostring(price)
-        end
-
-        createESP(model, label)
-        validModels[model] = true
     end
-
     cleanup(validModels)
     updateNearbyPlants()
 end
 
-
--- Infinite Sprinkler Logic (Your original code)
+-- Infinite Sprinkler Logic
 local infiniteSprinklerEnabled = false
 
 local function sprinklerAction()
@@ -662,7 +542,9 @@ local function sprinklerAction()
             if pp then
                 local dist = (pp.Position - root.Position).Magnitude
                 if dist <= range then
-                    local WaterEvent = ReplicatedStorage:FindFirstChild("WaterPlant") -- Assuming this remote is named WaterPlant
+                    -- Replace this with your game's actual watering method
+                    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+                    local WaterEvent = ReplicatedStorage:FindFirstChild("WaterPlant")
                     if WaterEvent and WaterEvent:IsA("RemoteEvent") then
                         WaterEvent:FireServer(model)
                     end
@@ -678,20 +560,18 @@ SprinklerToggleBtn.MouseButton1Click:Connect(function()
     SprinklerToggleBtn.BackgroundColor3 = infiniteSprinklerEnabled and Color3.fromRGB(80, 200, 80) or Color3.fromRGB(50, 50, 50)
 end)
 
-
--- Main loops
-spawn(function()
-    while true do
-        update()
-        wait(1)
-    end
-end)
-
 spawn(function()
     while true do
         if infiniteSprinklerEnabled then
             sprinklerAction()
         end
         wait(3)
+    end
+end)
+
+spawn(function()
+    while true do
+        update()
+        wait(1)
     end
 end)
