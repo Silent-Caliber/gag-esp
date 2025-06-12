@@ -1,12 +1,18 @@
--- Improved Plant ESP with Scrollable, Categorized, Draggable UI
+-- Grow a Garden ESP: Dual Column, All Fruits/Plants (2025)
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local espMap = {}
  
--- Define known plant/fruit types (add more as needed)
+-- All known fruits/plants in Grow a Garden (2025)
 local plantFruitNames = {
-    "Cacao", "Coconut", "Apple", "Pumpkin", "Watermelon", "Strawberry", "Blueberry", "Tomato", "Corn", "Daffodil", "Raspberry", "Carrot", "Banana", "Pineapple", "Lemon", "Lime", "Orange", "Pear", "Peach", "Cherry", "Kiwi", "Mango", "Grape", "Melon", "Plum", "Avocado", "Dragonfruit", "Lychee", "Papaya", "Guava", "Fig", "Pomegranate"
+    "Apple", "Banana", "Blueberry", "Cacao", "Coconut", "Corn", "Daffodil", "Dragonfruit", "Fig", "Flower", "Glowshroom",
+    "Grape", "Guava", "HoneyCrafter", "HoneyStation", "Kiwi", "Lemon", "Lime", "Lychee", "Mango", "Melon", "Orange", "Papaya",
+    "Peach", "Pear", "Pineapple", "Plum", "Pomegranate", "Pumpkin", "Raspberry", "Strawberry", "Tomato", "Watermelon",
+    "Blood Banana", "Common Egg", "FlowerBed", "Cactus", "Cranberry", "Starfruit", "Passionfruit", "Durian", "Jackfruit",
+    "Tangerine", "Apricot", "Mandarin", "Cherry", "Avocado", "Mulberry", "Blackberry", "Currant", "Gooseberry", "Date",
+    "Olive", "Persimmon", "Quince", "Sapote", "Soursop", "Breadfruit", "Longan", "Rambutan", "Salak", "Jabuticaba",
+    "Mangosteen", "Miracle Berry", "Tamarind", "Yuzu", "Custard Apple", "Sugar Apple", "Ackee", "Feijoa", "Medlar"
 }
 local plantFruitSet = {}
 for _, name in ipairs(plantFruitNames) do
@@ -29,12 +35,12 @@ local function getCategorizedTypes()
     return plants, others
 end
  
--- UI Setup (Compact, Scrollable, Categorized)
+-- UI Setup: Dual Column, Scrollable, Draggable
 local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
 ScreenGui.Name = "PlantESPSelector"
  
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 160, 0, 260)
+Frame.Size = UDim2.new(0, 260, 0, 260)
 Frame.Position = UDim2.new(0, 10, 0, 100)
 Frame.BackgroundTransparency = 0.2
 Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -50,35 +56,60 @@ Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 16
  
-local Scroll = Instance.new("ScrollingFrame", Frame)
-Scroll.Size = UDim2.new(1, 0, 1, -20)
-Scroll.Position = UDim2.new(0, 0, 0, 20)
-Scroll.CanvasSize = UDim2.new(0, 0, 0, 800)
-Scroll.BackgroundTransparency = 1
-Scroll.ScrollBarThickness = 6
+-- Left Column: Plants/Fruits
+local PlantScroll = Instance.new("ScrollingFrame", Frame)
+PlantScroll.Size = UDim2.new(0, 120, 1, -24)
+PlantScroll.Position = UDim2.new(0, 0, 0, 24)
+PlantScroll.CanvasSize = UDim2.new(0, 0, 0, 800)
+PlantScroll.BackgroundTransparency = 1
+PlantScroll.ScrollBarThickness = 4
  
-local UIListLayout = Instance.new("UIListLayout", Scroll)
-UIListLayout.Padding = UDim.new(0, 2)
+local PlantLabel = Instance.new("TextLabel", PlantScroll)
+PlantLabel.Size = UDim2.new(1, 0, 0, 18)
+PlantLabel.BackgroundTransparency = 1
+PlantLabel.Text = "Plants/Fruits"
+PlantLabel.TextColor3 = Color3.fromRGB(90, 255, 90)
+PlantLabel.Font = Enum.Font.SourceSansBold
+PlantLabel.TextSize = 13
+ 
+local PlantListLayout = Instance.new("UIListLayout", PlantScroll)
+PlantListLayout.Padding = UDim.new(0, 2)
+ 
+-- Right Column: Other Objects
+local OtherScroll = Instance.new("ScrollingFrame", Frame)
+OtherScroll.Size = UDim2.new(0, 120, 1, -24)
+OtherScroll.Position = UDim2.new(0, 130, 0, 24)
+OtherScroll.CanvasSize = UDim2.new(0, 0, 0, 800)
+OtherScroll.BackgroundTransparency = 1
+OtherScroll.ScrollBarThickness = 4
+ 
+local OtherLabel = Instance.new("TextLabel", OtherScroll)
+OtherLabel.Size = UDim2.new(1, 0, 0, 18)
+OtherLabel.BackgroundTransparency = 1
+OtherLabel.Text = "Other Objects"
+OtherLabel.TextColor3 = Color3.fromRGB(255, 180, 90)
+OtherLabel.Font = Enum.Font.SourceSansBold
+OtherLabel.TextSize = 13
+ 
+local OtherListLayout = Instance.new("UIListLayout", OtherScroll)
+OtherListLayout.Padding = UDim.new(0, 2)
  
 local selectedTypes = {}
  
 local function createToggles()
-    for _, child in ipairs(Scroll:GetChildren()) do
-        if child:IsA("TextButton") or child:IsA("TextLabel") then child:Destroy() end
+    -- Clear old buttons
+    for _, child in ipairs(PlantScroll:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
     end
+    for _, child in ipairs(OtherScroll:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+ 
     local plants, others = getCategorizedTypes()
  
-    -- Section: Plants/Fruits
-    local plantLabel = Instance.new("TextLabel", Scroll)
-    plantLabel.Size = UDim2.new(1, 0, 0, 18)
-    plantLabel.BackgroundTransparency = 1
-    plantLabel.Text = "Plants/Fruits"
-    plantLabel.TextColor3 = Color3.fromRGB(90, 255, 90)
-    plantLabel.Font = Enum.Font.SourceSansBold
-    plantLabel.TextSize = 14
- 
+    -- Plants/Fruits buttons
     for plantType, _ in pairs(plants) do
-        local btn = Instance.new("TextButton", Scroll)
+        local btn = Instance.new("TextButton", PlantScroll)
         btn.Size = UDim2.new(1, -8, 0, 18)
         btn.BackgroundColor3 = Color3.fromRGB(50, 80, 50)
         btn.TextColor3 = Color3.new(1, 1, 1)
@@ -92,17 +123,9 @@ local function createToggles()
         end)
     end
  
-    -- Section: Other Objects
-    local otherLabel = Instance.new("TextLabel", Scroll)
-    otherLabel.Size = UDim2.new(1, 0, 0, 18)
-    otherLabel.BackgroundTransparency = 1
-    otherLabel.Text = "Other Objects"
-    otherLabel.TextColor3 = Color3.fromRGB(255, 180, 90)
-    otherLabel.Font = Enum.Font.SourceSansBold
-    otherLabel.TextSize = 14
- 
+    -- Other objects buttons
     for otherType, _ in pairs(others) do
-        local btn = Instance.new("TextButton", Scroll)
+        local btn = Instance.new("TextButton", OtherScroll)
         btn.Size = UDim2.new(1, -8, 0, 18)
         btn.BackgroundColor3 = Color3.fromRGB(70, 50, 50)
         btn.TextColor3 = Color3.new(1, 1, 1)
