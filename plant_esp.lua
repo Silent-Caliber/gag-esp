@@ -1,4 +1,4 @@
--- Grow a Garden ESP: Only Crops/Plants (Obtainable & Unobtainable)
+-- Grow a Garden ESP: Fixed Rarity Legend, No Repeated Headings
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -34,6 +34,17 @@ for obtain, rarities in pairs(cropCategories) do
     end
 end
 
+local rarityOrder = {"Common","Uncommon","Rare","Legendary","Mythical","Divine","Prismatic"}
+local rarityColors = {
+    Common = Color3.fromRGB(180, 180, 180),
+    Uncommon = Color3.fromRGB(80, 200, 80),
+    Rare = Color3.fromRGB(80, 120, 255),
+    Legendary = Color3.fromRGB(255, 215, 0),
+    Mythical = Color3.fromRGB(255, 100, 255),
+    Divine = Color3.fromRGB(255, 90, 90),
+    Prismatic = Color3.fromRGB(100,255,255),
+}
+
 local function getCategorizedTypes()
     local cropsByCategory = {}
     for obtain, rarities in pairs(cropCategories) do
@@ -53,13 +64,13 @@ local function getCategorizedTypes()
     return cropsByCategory
 end
 
--- UI Setup: Two Columns, Draggable, Scrollable
+-- UI Setup: Fixed Legend + Two Columns, Draggable, Scrollable
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PlantESPSelector"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 440, 0, 420)
+Frame.Size = UDim2.new(0, 530, 0, 420)
 Frame.Position = UDim2.new(0, 10, 0, 100)
 Frame.BackgroundTransparency = 0.2
 Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -75,10 +86,39 @@ Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 18
 
+-- Fixed Rarity Legend (leftmost)
+local LegendCol = Instance.new("Frame", Frame)
+LegendCol.Size = UDim2.new(0, 90, 1, -28)
+LegendCol.Position = UDim2.new(0, 0, 0, 28)
+LegendCol.BackgroundTransparency = 1
+
+local LegendLabel = Instance.new("TextLabel", LegendCol)
+LegendLabel.Size = UDim2.new(1, 0, 0, 18)
+LegendLabel.Position = UDim2.new(0, 0, 0, 0)
+LegendLabel.BackgroundTransparency = 1
+LegendLabel.Text = "RARITY"
+LegendLabel.TextColor3 = Color3.fromRGB(255,255,255)
+LegendLabel.Font = Enum.Font.SourceSansBold
+LegendLabel.TextSize = 15
+
+local LegendListLayout = Instance.new("UIListLayout", LegendCol)
+LegendListLayout.Padding = UDim.new(0, 2)
+LegendListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+for _, rarity in ipairs(rarityOrder) do
+    local label = Instance.new("TextLabel", LegendCol)
+    label.Size = UDim2.new(1, 0, 0, 18)
+    label.BackgroundTransparency = 1
+    label.Text = rarity
+    label.TextColor3 = rarityColors[rarity]
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 14
+end
+
 -- Left: Obtainable Crops
 local ObtainCol = Instance.new("Frame", Frame)
 ObtainCol.Size = UDim2.new(0, 210, 1, -28)
-ObtainCol.Position = UDim2.new(0, 0, 0, 28)
+ObtainCol.Position = UDim2.new(0, 90, 0, 28)
 ObtainCol.BackgroundTransparency = 1
 
 local ObtainLabel = Instance.new("TextLabel", ObtainCol)
@@ -103,7 +143,7 @@ ObtainListLayout.Padding = UDim.new(0, 2)
 -- Right: Unobtainable Crops
 local UnobtainCol = Instance.new("Frame", Frame)
 UnobtainCol.Size = UDim2.new(0, 210, 1, -28)
-UnobtainCol.Position = UDim2.new(0, 220, 0, 28)
+UnobtainCol.Position = UDim2.new(0, 300, 0, 28)
 UnobtainCol.BackgroundTransparency = 1
 
 local UnobtainLabel = Instance.new("TextLabel", UnobtainCol)
@@ -126,47 +166,26 @@ local UnobtainListLayout = Instance.new("UIListLayout", UnobtainScroll)
 UnobtainListLayout.Padding = UDim.new(0, 2)
 
 -- Parent columns to main frame!
+LegendCol.Parent = Frame
 ObtainCol.Parent = Frame
 UnobtainCol.Parent = Frame
 
 local selectedTypes = {}
 
-local function makeSectionLabel(parent, text, color)
-    local label = Instance.new("TextLabel", parent)
-    label.Size = UDim2.new(1, 0, 0, 18)
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = color
-    label.Font = Enum.Font.SourceSansBold
-    label.TextSize = 14
-    return label
-end
-
-local rarityColors = {
-    Common = Color3.fromRGB(180, 180, 180),
-    Uncommon = Color3.fromRGB(80, 200, 80),
-    Rare = Color3.fromRGB(80, 120, 255),
-    Legendary = Color3.fromRGB(255, 215, 0),
-    Mythical = Color3.fromRGB(255, 100, 255),
-    Divine = Color3.fromRGB(255, 90, 90),
-    Prismatic = Color3.fromRGB(100,255,255),
-}
-
 local function createToggles()
     -- Clear old
     for _, child in ipairs(ObtainScroll:GetChildren()) do
-        if child:IsA("TextButton") or (child:IsA("TextLabel")) then child:Destroy() end
+        if child:IsA("TextButton") then child:Destroy() end
     end
     for _, child in ipairs(UnobtainScroll:GetChildren()) do
-        if child:IsA("TextButton") or (child:IsA("TextLabel")) then child:Destroy() end
+        if child:IsA("TextButton") then child:Destroy() end
     end
 
     local cropsByCategory = getCategorizedTypes()
 
     -- Obtainable Crops
-    for _, rarity in ipairs({"Common","Uncommon","Rare","Legendary","Mythical","Divine","Prismatic"}) do
+    for _, rarity in ipairs(rarityOrder) do
         if cropCategories.Obtainable[rarity] then
-            makeSectionLabel(ObtainScroll, "  "..rarity, rarityColors[rarity] or Color3.new(1,1,1))
             for _, crop in ipairs(cropCategories.Obtainable[rarity]) do
                 if cropsByCategory.Obtainable[rarity][crop] then
                     local btn = Instance.new("TextButton", ObtainScroll)
@@ -187,9 +206,8 @@ local function createToggles()
     end
 
     -- Unobtainable Crops
-    for _, rarity in ipairs({"Common","Uncommon","Rare","Legendary","Mythical","Divine","Prismatic"}) do
+    for _, rarity in ipairs(rarityOrder) do
         if cropCategories.Unobtainable[rarity] then
-            makeSectionLabel(UnobtainScroll, "  "..rarity, rarityColors[rarity] or Color3.new(1,1,1))
             for _, crop in ipairs(cropCategories.Unobtainable[rarity]) do
                 if cropsByCategory.Unobtainable[rarity][crop] then
                     local btn = Instance.new("TextButton", UnobtainScroll)
