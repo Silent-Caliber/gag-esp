@@ -1,4 +1,4 @@
--- Grow a Garden ESP: Full Optimized Version with UI
+-- Grow a Garden ESP: True Dual-Column UI for Obtainable/Unobtainable Crops
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -36,7 +36,6 @@ end
 
 local function getCategorizedTypes()
     local cropsByCategory = {}
-    local others = {}
     for obtain, rarities in pairs(cropCategories) do
         cropsByCategory[obtain] = {}
         for rarity, _ in pairs(rarities) do
@@ -48,21 +47,19 @@ local function getCategorizedTypes()
             local info = cropSet[model.Name:lower()]
             if info then
                 cropsByCategory[info.obtain][info.rarity][model.Name] = true
-            else
-                others[model.Name] = true
             end
         end
     end
-    return cropsByCategory, others
+    return cropsByCategory
 end
 
--- UI Setup: Scrollable, Draggable, Categorized
+-- UI Setup: Dual Column, Draggable, Scrollable
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PlantESPSelector"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 340, 0, 400)
+Frame.Size = UDim2.new(0, 440, 0, 420)
 Frame.Position = UDim2.new(0, 10, 0, 100)
 Frame.BackgroundTransparency = 0.2
 Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -78,34 +75,61 @@ Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 18
 
--- Left: Crops, Right: Other Objects
-local CropScroll = Instance.new("ScrollingFrame", Frame)
-CropScroll.Size = UDim2.new(0, 210, 1, -28)
-CropScroll.Position = UDim2.new(0, 0, 0, 28)
-CropScroll.CanvasSize = UDim2.new(0, 0, 0, 1600)
-CropScroll.BackgroundTransparency = 1
-CropScroll.ScrollBarThickness = 6
+-- Container for both columns
+local Columns = Instance.new("Frame", Frame)
+Columns.Size = UDim2.new(1, 0, 1, -28)
+Columns.Position = UDim2.new(0, 0, 0, 28)
+Columns.BackgroundTransparency = 1
 
-local CropListLayout = Instance.new("UIListLayout", CropScroll)
-CropListLayout.Padding = UDim.new(0, 2)
+-- Left: Obtainable Crops
+local ObtainCol = Instance.new("Frame", Columns)
+ObtainCol.Size = UDim2.new(0, 210, 1, 0)
+ObtainCol.Position = UDim2.new(0, 0, 0, 0)
+ObtainCol.BackgroundTransparency = 1
 
-local OtherScroll = Instance.new("ScrollingFrame", Frame)
-OtherScroll.Size = UDim2.new(0, 120, 1, -28)
-OtherScroll.Position = UDim2.new(0, 220, 0, 28)
-OtherScroll.CanvasSize = UDim2.new(0, 0, 0, 800)
-OtherScroll.BackgroundTransparency = 1
-OtherScroll.ScrollBarThickness = 6
+local ObtainLabel = Instance.new("TextLabel", ObtainCol)
+ObtainLabel.Size = UDim2.new(1, 0, 0, 18)
+ObtainLabel.Position = UDim2.new(0, 0, 0, 0)
+ObtainLabel.BackgroundTransparency = 1
+ObtainLabel.Text = "Obtainable Crops"
+ObtainLabel.TextColor3 = Color3.fromRGB(90, 255, 90)
+ObtainLabel.Font = Enum.Font.SourceSansBold
+ObtainLabel.TextSize = 15
 
-local OtherLabel = Instance.new("TextLabel", OtherScroll)
-OtherLabel.Size = UDim2.new(1, 0, 0, 18)
-OtherLabel.BackgroundTransparency = 1
-OtherLabel.Text = "Other Objects"
-OtherLabel.TextColor3 = Color3.fromRGB(255, 180, 90)
-OtherLabel.Font = Enum.Font.SourceSansBold
-OtherLabel.TextSize = 13
+local ObtainScroll = Instance.new("ScrollingFrame", ObtainCol)
+ObtainScroll.Size = UDim2.new(1, 0, 1, -20)
+ObtainScroll.Position = UDim2.new(0, 0, 0, 20)
+ObtainScroll.CanvasSize = UDim2.new(0, 0, 0, 1600)
+ObtainScroll.BackgroundTransparency = 1
+ObtainScroll.ScrollBarThickness = 6
 
-local OtherListLayout = Instance.new("UIListLayout", OtherScroll)
-OtherListLayout.Padding = UDim.new(0, 2)
+local ObtainListLayout = Instance.new("UIListLayout", ObtainScroll)
+ObtainListLayout.Padding = UDim.new(0, 2)
+
+-- Right: Unobtainable Crops
+local UnobtainCol = Instance.new("Frame", Columns)
+UnobtainCol.Size = UDim2.new(0, 210, 1, 0)
+UnobtainCol.Position = UDim2.new(0, 220, 0, 0)
+UnobtainCol.BackgroundTransparency = 1
+
+local UnobtainLabel = Instance.new("TextLabel", UnobtainCol)
+UnobtainLabel.Size = UDim2.new(1, 0, 0, 18)
+UnobtainLabel.Position = UDim2.new(0, 0, 0, 0)
+UnobtainLabel.BackgroundTransparency = 1
+UnobtainLabel.Text = "Unobtainable Crops"
+UnobtainLabel.TextColor3 = Color3.fromRGB(255, 180, 90)
+UnobtainLabel.Font = Enum.Font.SourceSansBold
+UnobtainLabel.TextSize = 15
+
+local UnobtainScroll = Instance.new("ScrollingFrame", UnobtainCol)
+UnobtainScroll.Size = UDim2.new(1, 0, 1, -20)
+UnobtainScroll.Position = UDim2.new(0, 0, 0, 20)
+UnobtainScroll.CanvasSize = UDim2.new(0, 0, 0, 1600)
+UnobtainScroll.BackgroundTransparency = 1
+UnobtainScroll.ScrollBarThickness = 6
+
+local UnobtainListLayout = Instance.new("UIListLayout", UnobtainScroll)
+UnobtainListLayout.Padding = UDim.new(0, 2)
 
 local selectedTypes = {}
 
@@ -132,55 +156,59 @@ local rarityColors = {
 
 local function createToggles()
     -- Clear old
-    for _, child in ipairs(CropScroll:GetChildren()) do
-        if child:IsA("TextButton") or child:IsA("TextLabel") then child:Destroy() end
+    for _, child in ipairs(ObtainScroll:GetChildren()) do
+        if child:IsA("TextButton") or (child:IsA("TextLabel")) then child:Destroy() end
     end
-    for _, child in ipairs(OtherScroll:GetChildren()) do
-        if child:IsA("TextButton") then child:Destroy() end
+    for _, child in ipairs(UnobtainScroll:GetChildren()) do
+        if child:IsA("TextButton") or (child:IsA("TextLabel")) then child:Destroy() end
     end
-    OtherLabel.Parent = OtherScroll
 
-    local cropsByCategory, others = getCategorizedTypes()
+    local cropsByCategory = getCategorizedTypes()
 
-    for obtainKey, obtainLabel in pairs({Obtainable="Obtainable Crops", Unobtainable="Unobtainable Crops"}) do
-        makeSectionLabel(CropScroll, obtainLabel, Color3.fromRGB(255,255,255))
-        for _, rarity in ipairs({"Common","Uncommon","Rare","Legendary","Mythical","Divine","Prismatic"}) do
-            if cropCategories[obtainKey][rarity] then
-                makeSectionLabel(CropScroll, "  "..rarity, rarityColors[rarity] or Color3.new(1,1,1))
-                for _, crop in ipairs(cropCategories[obtainKey][rarity]) do
-                    if cropsByCategory[obtainKey][rarity][crop] then
-                        local btn = Instance.new("TextButton", CropScroll)
-                        btn.Size = UDim2.new(1, -8, 0, 18)
-                        btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
-                        btn.TextColor3 = Color3.new(1, 1, 1)
-                        btn.Text = "[OFF] " .. crop
-                        btn.AutoButtonColor = true
-                        btn.TextSize = 12
-                        btn.Font = Enum.Font.SourceSansBold
-                        btn.MouseButton1Click:Connect(function()
-                            selectedTypes[crop] = not selectedTypes[crop]
-                            btn.Text = (selectedTypes[crop] and "[ON] " or "[OFF] ") .. crop
-                        end)
-                    end
+    -- Obtainable Crops
+    for _, rarity in ipairs({"Common","Uncommon","Rare","Legendary","Mythical","Divine","Prismatic"}) do
+        if cropCategories.Obtainable[rarity] then
+            makeSectionLabel(ObtainScroll, "  "..rarity, rarityColors[rarity] or Color3.new(1,1,1))
+            for _, crop in ipairs(cropCategories.Obtainable[rarity]) do
+                if cropsByCategory.Obtainable[rarity][crop] then
+                    local btn = Instance.new("TextButton", ObtainScroll)
+                    btn.Size = UDim2.new(1, -8, 0, 18)
+                    btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
+                    btn.TextColor3 = Color3.new(1, 1, 1)
+                    btn.Text = "[OFF] " .. crop
+                    btn.AutoButtonColor = true
+                    btn.TextSize = 12
+                    btn.Font = Enum.Font.SourceSansBold
+                    btn.MouseButton1Click:Connect(function()
+                        selectedTypes[crop] = not selectedTypes[crop]
+                        btn.Text = (selectedTypes[crop] and "[ON] " or "[OFF] ") .. crop
+                    end)
                 end
             end
         end
     end
 
-    -- Other objects buttons
-    for otherType, _ in pairs(others) do
-        local btn = Instance.new("TextButton", OtherScroll)
-        btn.Size = UDim2.new(1, -8, 0, 18)
-        btn.BackgroundColor3 = Color3.fromRGB(70, 50, 50)
-        btn.TextColor3 = Color3.new(1, 1, 1)
-        btn.Text = "[OFF] " .. otherType
-        btn.AutoButtonColor = true
-        btn.TextSize = 12
-        btn.Font = Enum.Font.SourceSansBold
-        btn.MouseButton1Click:Connect(function()
-            selectedTypes[otherType] = not selectedTypes[otherType]
-            btn.Text = (selectedTypes[otherType] and "[ON] " or "[OFF] ") .. otherType
-        end)
+    -- Unobtainable Crops
+    for _, rarity in ipairs({"Common","Uncommon","Rare","Legendary","Mythical","Divine","Prismatic"}) do
+        if cropCategories.Unobtainable[rarity] then
+            makeSectionLabel(UnobtainScroll, "  "..rarity, rarityColors[rarity] or Color3.new(1,1,1))
+            for _, crop in ipairs(cropCategories.Unobtainable[rarity]) do
+                if cropsByCategory.Unobtainable[rarity][crop] then
+                    local btn = Instance.new("TextButton", UnobtainScroll)
+                    btn.Size = UDim2.new(1, -8, 0, 18)
+                    btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
+                    btn.TextColor3 = Color3.new(1, 1, 1)
+                    btn.Text = "[OFF] " .. crop
+                    btn.AutoButtonColor = true
+                    btn.TextSize = 12
+                    btn.Font = Enum.Font.SourceSansBold
+                    btn.MouseButton1Click:Connect(function()
+                        selectedTypes[crop] = not selectedTypes[crop]
+                        btn.Text = (selectedTypes[crop] and "[ON] " or "[OFF] ") .. crop
+                    end)
+                end
+            end
+        end
     end
 end
 
@@ -276,7 +304,6 @@ local function update()
     cleanup(validModels)
 end
 
--- Update every 0.2 seconds instead of every frame
 spawn(function()
     while true do
         update()
