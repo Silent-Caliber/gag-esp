@@ -1,4 +1,4 @@
--- Grow a Garden ESP: Compact, Clean, Lag-Free, Fixed Backgrounds
+-- Grow a Garden ESP: Compact, Clean, Aligned, Transparent Backgrounds, "Wt." Label
 
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -65,8 +65,8 @@ local function getCategorizedTypes()
 end
 
 -- UI Sizes
-local normalSize = UDim2.new(0, 340, 0, 240)
-local compactSize = UDim2.new(0, 220, 0, 150)
+local normalSize = UDim2.new(0, 340, 0, 220)
+local compactSize = UDim2.new(0, 210, 0, 130)
 local normalPos = UDim2.new(0, 10, 0, 60)
 local compactPos = UDim2.new(0, 10, 0, 20)
 
@@ -82,19 +82,27 @@ Frame.BackgroundTransparency = 1 -- fully transparent, backgrounds are on column
 Frame.Active = true
 Frame.Draggable = true
 
-local Title = Instance.new("TextLabel", Frame)
-Title.Size = UDim2.new(1, 0, 0, 20)
+-- Title Bar with black transparent background
+local TitleBar = Instance.new("Frame", Frame)
+TitleBar.Size = UDim2.new(1, 0, 0, 22)
+TitleBar.Position = UDim2.new(0, 0, 0, 0)
+TitleBar.BackgroundTransparency = 0.25
+TitleBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+TitleBar.BorderSizePixel = 0
+
+local Title = Instance.new("TextLabel", TitleBar)
+Title.Size = UDim2.new(1, 0, 1, 0)
 Title.Position = UDim2.new(0, 0, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Text = "Grow a Garden ESP"
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 15
+Title.TextSize = 14
 
 -- Fixed Rarity Legend (leftmost)
 local LegendCol = Instance.new("Frame", Frame)
-LegendCol.Size = UDim2.new(0, 65, 1, -20)
-LegendCol.Position = UDim2.new(0, 0, 0, 20)
+LegendCol.Size = UDim2.new(0, 65, 1, -22)
+LegendCol.Position = UDim2.new(0, 0, 0, 22)
 LegendCol.BackgroundTransparency = 0.2
 LegendCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 LegendCol.BorderSizePixel = 0
@@ -124,8 +132,8 @@ end
 
 -- Obtainable Crops Column
 local ObtainCol = Instance.new("Frame", Frame)
-ObtainCol.Size = UDim2.new(0, 120, 1, -20)
-ObtainCol.Position = UDim2.new(0, 65, 0, 20)
+ObtainCol.Size = UDim2.new(0, 120, 1, -22)
+ObtainCol.Position = UDim2.new(0, 65, 0, 22)
 ObtainCol.BackgroundTransparency = 0.2
 ObtainCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 ObtainCol.BorderSizePixel = 0
@@ -151,8 +159,8 @@ ObtainListLayout.Padding = UDim.new(0, 1)
 
 -- Unobtainable Crops Column
 local UnobtainCol = Instance.new("Frame", Frame)
-UnobtainCol.Size = UDim2.new(0, 120, 1, -20)
-UnobtainCol.Position = UDim2.new(0, 185, 0, 20)
+UnobtainCol.Size = UDim2.new(0, 120, 1, -22)
+UnobtainCol.Position = UDim2.new(0, 185, 0, 22)
 UnobtainCol.BackgroundTransparency = 0.2
 UnobtainCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 UnobtainCol.BorderSizePixel = 0
@@ -176,16 +184,16 @@ UnobtainScroll.ScrollBarThickness = 4
 local UnobtainListLayout = Instance.new("UIListLayout", UnobtainScroll)
 UnobtainListLayout.Padding = UDim.new(0, 1)
 
--- Nearby Plants UI (bottom of main UI)
+-- Nearby Plants UI (bottom, perfectly aligned)
 local NearbyFrame = Instance.new("Frame", Frame)
-NearbyFrame.Size = UDim2.new(1, 0, 0, 28)
-NearbyFrame.Position = UDim2.new(0, 0, 1, -28)
+NearbyFrame.Size = UDim2.new(0, 275, 0, 24)
+NearbyFrame.Position = UDim2.new(0, 65, 1, -24)
 NearbyFrame.BackgroundTransparency = 0.3
 NearbyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 NearbyFrame.BorderSizePixel = 0
 
 local NearbyLabel = Instance.new("TextLabel", NearbyFrame)
-NearbyLabel.Size = UDim2.new(1, 0, 0, 14)
+NearbyLabel.Size = UDim2.new(1, 0, 0, 12)
 NearbyLabel.Position = UDim2.new(0, 0, 0, 0)
 NearbyLabel.BackgroundTransparency = 1
 NearbyLabel.Text = "Nearby"
@@ -194,8 +202,8 @@ NearbyLabel.Font = Enum.Font.SourceSansBold
 NearbyLabel.TextSize = 11
 
 local NearbyScroll = Instance.new("ScrollingFrame", NearbyFrame)
-NearbyScroll.Size = UDim2.new(1, 0, 1, -14)
-NearbyScroll.Position = UDim2.new(0, 0, 0, 14)
+NearbyScroll.Size = UDim2.new(1, 0, 1, -12)
+NearbyScroll.Position = UDim2.new(0, 0, 0, 12)
 NearbyScroll.CanvasSize = UDim2.new(0, 0, 0, 100)
 NearbyScroll.BackgroundTransparency = 1
 NearbyScroll.ScrollBarThickness = 2
@@ -203,7 +211,6 @@ NearbyScroll.ScrollBarThickness = 2
 local NearbyListLayout = Instance.new("UIListLayout", NearbyScroll)
 NearbyListLayout.Padding = UDim.new(0, 1)
 
--- Parent columns to main frame!
 LegendCol.Parent = Frame
 ObtainCol.Parent = Frame
 UnobtainCol.Parent = Frame
@@ -313,7 +320,7 @@ end
 
 createToggleBtn(ScreenGui, Frame)
 
--- UI Size Toggle Button (top right of the UI panel, magnifier)
+-- UI Size Toggle Button (top right of the UI panel, magnifier, with background)
 local function createSizeToggleBtn(frame)
     if frame:FindFirstChild("SizeToggleBtn") then
         frame.SizeToggleBtn:Destroy()
@@ -323,7 +330,7 @@ local function createSizeToggleBtn(frame)
     btn.Name = "SizeToggleBtn"
     btn.Parent = frame
     btn.Size = UDim2.new(0, 30, 0, 30)
-    btn.Position = UDim2.new(1, -36, 0, 4)
+    btn.Position = UDim2.new(1, -36, 0, 2)
     btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Text = "🔍"
@@ -343,17 +350,21 @@ local function createSizeToggleBtn(frame)
         if compact then
             frame.Size = compactSize
             frame.Position = compactPos
-            ObtainCol.Size = UDim2.new(0, 70, 1, -20)
-            ObtainCol.Position = UDim2.new(0, 65, 0, 20)
-            UnobtainCol.Size = UDim2.new(0, 70, 1, -20)
-            UnobtainCol.Position = UDim2.new(0, 135, 0, 20)
+            ObtainCol.Size = UDim2.new(0, 70, 1, -22)
+            ObtainCol.Position = UDim2.new(0, 65, 0, 22)
+            UnobtainCol.Size = UDim2.new(0, 70, 1, -22)
+            UnobtainCol.Position = UDim2.new(0, 135, 0, 22)
+            NearbyFrame.Size = UDim2.new(0, 140, 0, 16)
+            NearbyFrame.Position = UDim2.new(0, 65, 1, -16)
         else
             frame.Size = normalSize
             frame.Position = normalPos
-            ObtainCol.Size = UDim2.new(0, 120, 1, -20)
-            ObtainCol.Position = UDim2.new(0, 65, 0, 20)
-            UnobtainCol.Size = UDim2.new(0, 120, 1, -20)
-            UnobtainCol.Position = UDim2.new(0, 185, 0, 20)
+            ObtainCol.Size = UDim2.new(0, 120, 1, -22)
+            ObtainCol.Position = UDim2.new(0, 65, 0, 22)
+            UnobtainCol.Size = UDim2.new(0, 120, 1, -22)
+            UnobtainCol.Position = UDim2.new(0, 185, 0, 22)
+            NearbyFrame.Size = UDim2.new(0, 275, 0, 24)
+            NearbyFrame.Position = UDim2.new(0, 65, 1, -24)
         end
     end)
 end
@@ -464,7 +475,7 @@ local function update()
                     end
                     local label = model.Name
                     if weight then
-                        label = label .. "\nWeight: " .. tostring(weight)
+                        label = label .. "\nWt.: " .. tostring(weight)
                     end
                     if price then
                         label = label .. "\nPrice: " .. tostring(price)
