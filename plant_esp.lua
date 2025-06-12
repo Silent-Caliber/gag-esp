@@ -1,4 +1,4 @@
--- Grow a Garden ESP: Only Crops/Plants, Rarity Legend, Show/Hide UI Button
+-- Grow a Garden ESP: Crops Only, Rarity Legend, Circular Show/Hide UI Button
 
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -72,7 +72,7 @@ ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local Frame = Instance.new("Frame", ScreenGui)
 Frame.Size = UDim2.new(0, 530, 0, 420)
-Frame.Position = UDim2.new(0, 10, 0, 100)
+Frame.Position = UDim2.new(0, 60, 0, 100)
 Frame.BackgroundTransparency = 0.2
 Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Frame.Active = true
@@ -237,28 +237,50 @@ spawn(function()
     end
 end)
 
--- Toggle Button (top left, always visible)
-local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Parent = ScreenGui
-ToggleBtn.Size = UDim2.new(0, 40, 0, 40)
-ToggleBtn.Position = UDim2.new(0, 10, 0, 40)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
-ToggleBtn.Text = "☰"
-ToggleBtn.Font = Enum.Font.SourceSansBold
-ToggleBtn.TextSize = 24
-ToggleBtn.AutoButtonColor = true
-ToggleBtn.BackgroundTransparency = 0.2
-ToggleBtn.ZIndex = 10
+-- Circular Show/Hide UI Button (top left, always visible)
+local function createToggleBtn(screenGui, frame)
+    -- Remove any previous button
+    if screenGui:FindFirstChild("ShowHideESPBtn") then
+        screenGui.ShowHideESPBtn:Destroy()
+    end
 
--- Hide UI by default? (set to false if you want UI shown on start)
-local uiVisible = true
-Frame.Visible = uiVisible
+    local ToggleBtn = Instance.new("TextButton")
+    ToggleBtn.Name = "ShowHideESPBtn"
+    ToggleBtn.Parent = screenGui
+    ToggleBtn.Size = UDim2.new(0, 48, 0, 48)
+    ToggleBtn.Position = UDim2.new(0, 6, 0, 6)
+    ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
+    ToggleBtn.Text = "☰"
+    ToggleBtn.Font = Enum.Font.SourceSansBold
+    ToggleBtn.TextSize = 30
+    ToggleBtn.AutoButtonColor = true
+    ToggleBtn.BackgroundTransparency = 0.15
+    ToggleBtn.ZIndex = 100
+    ToggleBtn.BorderSizePixel = 0
 
-ToggleBtn.MouseButton1Click:Connect(function()
-    uiVisible = not uiVisible
-    Frame.Visible = uiVisible
-end)
+    -- Make it a perfect circle
+    local corner = Instance.new("UICorner", ToggleBtn)
+    corner.CornerRadius = UDim.new(1, 0)
+
+    -- Add drop shadow for visibility
+    local shadow = Instance.new("ImageLabel", ToggleBtn)
+    shadow.BackgroundTransparency = 1
+    shadow.Image = "rbxassetid://1316045217"
+    shadow.Size = UDim2.new(1.4, 0, 1.4, 0)
+    shadow.Position = UDim2.new(-0.2, 0, -0.2, 0)
+    shadow.ZIndex = 99
+
+    local uiVisible = true
+    frame.Visible = uiVisible
+
+    ToggleBtn.MouseButton1Click:Connect(function()
+        uiVisible = not uiVisible
+        frame.Visible = uiVisible
+    end)
+end
+
+createToggleBtn(ScreenGui, Frame)
 
 -- ESP Core
 local function getPP(model)
