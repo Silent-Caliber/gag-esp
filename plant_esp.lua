@@ -1,11 +1,10 @@
--- Grow a Garden ESP: Crops Only, Rarity Legend, Circular Toggle, Top-Right Size Toggle, Lag Fix, Nearby Plants UI
+-- Grow a Garden ESP: Compact, Clean, Lag-Free, Fixed Backgrounds
 
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local espMap = {}
 
--- Crop List by Rarity and Obtainability
 local cropCategories = {
     Obtainable = {
         Common = {"Carrot", "Strawberry"},
@@ -66,12 +65,12 @@ local function getCategorizedTypes()
 end
 
 -- UI Sizes
-local normalSize = UDim2.new(0, 530, 0, 420)
-local compactSize = UDim2.new(0, 320, 0, 260)
-local normalPos = UDim2.new(0, 60, 0, 100)
-local compactPos = UDim2.new(0, 20, 0, 60)
+local normalSize = UDim2.new(0, 340, 0, 240)
+local compactSize = UDim2.new(0, 220, 0, 150)
+local normalPos = UDim2.new(0, 10, 0, 60)
+local compactPos = UDim2.new(0, 10, 0, 20)
 
--- UI Setup: Fixed Legend + Two Columns, Draggable, Scrollable
+-- UI Setup: Two Columns, Each With Own Background, Draggable, Scrollable
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PlantESPSelector"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
@@ -79,34 +78,35 @@ ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 local Frame = Instance.new("Frame", ScreenGui)
 Frame.Size = normalSize
 Frame.Position = normalPos
-Frame.BackgroundTransparency = 0.2
-Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.BackgroundTransparency = 1 -- fully transparent, backgrounds are on columns
 Frame.Active = true
 Frame.Draggable = true
 
 local Title = Instance.new("TextLabel", Frame)
-Title.Size = UDim2.new(1, 0, 0, 24)
+Title.Size = UDim2.new(1, 0, 0, 20)
 Title.Position = UDim2.new(0, 0, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Text = "Grow a Garden ESP"
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 18
+Title.TextSize = 15
 
 -- Fixed Rarity Legend (leftmost)
 local LegendCol = Instance.new("Frame", Frame)
-LegendCol.Size = UDim2.new(0, 90, 1, -28)
-LegendCol.Position = UDim2.new(0, 0, 0, 28)
-LegendCol.BackgroundTransparency = 1
+LegendCol.Size = UDim2.new(0, 65, 1, -20)
+LegendCol.Position = UDim2.new(0, 0, 0, 20)
+LegendCol.BackgroundTransparency = 0.2
+LegendCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+LegendCol.BorderSizePixel = 0
 
 local LegendLabel = Instance.new("TextLabel", LegendCol)
-LegendLabel.Size = UDim2.new(1, 0, 0, 18)
+LegendLabel.Size = UDim2.new(1, 0, 0, 16)
 LegendLabel.Position = UDim2.new(0, 0, 0, 0)
 LegendLabel.BackgroundTransparency = 1
 LegendLabel.Text = "RARITY"
 LegendLabel.TextColor3 = Color3.fromRGB(255,255,255)
 LegendLabel.Font = Enum.Font.SourceSansBold
-LegendLabel.TextSize = 15
+LegendLabel.TextSize = 12
 
 local LegendListLayout = Instance.new("UIListLayout", LegendCol)
 LegendListLayout.Padding = UDim.new(0, 2)
@@ -114,90 +114,94 @@ LegendListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 for _, rarity in ipairs(rarityOrder) do
     local label = Instance.new("TextLabel", LegendCol)
-    label.Size = UDim2.new(1, 0, 0, 18)
+    label.Size = UDim2.new(1, 0, 0, 14)
     label.BackgroundTransparency = 1
     label.Text = rarity
     label.TextColor3 = rarityColors[rarity]
     label.Font = Enum.Font.SourceSansBold
-    label.TextSize = 14
+    label.TextSize = 12
 end
 
--- Left: Obtainable Crops
+-- Obtainable Crops Column
 local ObtainCol = Instance.new("Frame", Frame)
-ObtainCol.Size = UDim2.new(0, 210, 1, -28)
-ObtainCol.Position = UDim2.new(0, 90, 0, 28)
-ObtainCol.BackgroundTransparency = 1
+ObtainCol.Size = UDim2.new(0, 120, 1, -20)
+ObtainCol.Position = UDim2.new(0, 65, 0, 20)
+ObtainCol.BackgroundTransparency = 0.2
+ObtainCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ObtainCol.BorderSizePixel = 0
 
 local ObtainLabel = Instance.new("TextLabel", ObtainCol)
-ObtainLabel.Size = UDim2.new(1, 0, 0, 18)
+ObtainLabel.Size = UDim2.new(1, 0, 0, 16)
 ObtainLabel.Position = UDim2.new(0, 0, 0, 0)
 ObtainLabel.BackgroundTransparency = 1
-ObtainLabel.Text = "Obtainable Crops"
+ObtainLabel.Text = "Obtainable"
 ObtainLabel.TextColor3 = Color3.fromRGB(90, 255, 90)
 ObtainLabel.Font = Enum.Font.SourceSansBold
-ObtainLabel.TextSize = 15
+ObtainLabel.TextSize = 12
 
 local ObtainScroll = Instance.new("ScrollingFrame", ObtainCol)
-ObtainScroll.Size = UDim2.new(1, 0, 1, -20)
-ObtainScroll.Position = UDim2.new(0, 0, 0, 20)
-ObtainScroll.CanvasSize = UDim2.new(0, 0, 0, 1600)
+ObtainScroll.Size = UDim2.new(1, 0, 1, -16)
+ObtainScroll.Position = UDim2.new(0, 0, 0, 16)
+ObtainScroll.CanvasSize = UDim2.new(0, 0, 0, 800)
 ObtainScroll.BackgroundTransparency = 1
-ObtainScroll.ScrollBarThickness = 6
+ObtainScroll.ScrollBarThickness = 4
 
 local ObtainListLayout = Instance.new("UIListLayout", ObtainScroll)
-ObtainListLayout.Padding = UDim.new(0, 2)
+ObtainListLayout.Padding = UDim.new(0, 1)
 
--- Right: Unobtainable Crops
+-- Unobtainable Crops Column
 local UnobtainCol = Instance.new("Frame", Frame)
-UnobtainCol.Size = UDim2.new(0, 210, 1, -28)
-UnobtainCol.Position = UDim2.new(0, 300, 0, 28)
-UnobtainCol.BackgroundTransparency = 1
+UnobtainCol.Size = UDim2.new(0, 120, 1, -20)
+UnobtainCol.Position = UDim2.new(0, 185, 0, 20)
+UnobtainCol.BackgroundTransparency = 0.2
+UnobtainCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+UnobtainCol.BorderSizePixel = 0
 
 local UnobtainLabel = Instance.new("TextLabel", UnobtainCol)
-UnobtainLabel.Size = UDim2.new(1, 0, 0, 18)
+UnobtainLabel.Size = UDim2.new(1, 0, 0, 16)
 UnobtainLabel.Position = UDim2.new(0, 0, 0, 0)
 UnobtainLabel.BackgroundTransparency = 1
-UnobtainLabel.Text = "Unobtainable Crops"
+UnobtainLabel.Text = "Unobtainable"
 UnobtainLabel.TextColor3 = Color3.fromRGB(255, 180, 90)
 UnobtainLabel.Font = Enum.Font.SourceSansBold
-UnobtainLabel.TextSize = 15
+UnobtainLabel.TextSize = 12
 
 local UnobtainScroll = Instance.new("ScrollingFrame", UnobtainCol)
-UnobtainScroll.Size = UDim2.new(1, 0, 1, -20)
-UnobtainScroll.Position = UDim2.new(0, 0, 0, 20)
-UnobtainScroll.CanvasSize = UDim2.new(0, 0, 0, 1600)
+UnobtainScroll.Size = UDim2.new(1, 0, 1, -16)
+UnobtainScroll.Position = UDim2.new(0, 0, 0, 16)
+UnobtainScroll.CanvasSize = UDim2.new(0, 0, 0, 800)
 UnobtainScroll.BackgroundTransparency = 1
-UnobtainScroll.ScrollBarThickness = 6
+UnobtainScroll.ScrollBarThickness = 4
 
 local UnobtainListLayout = Instance.new("UIListLayout", UnobtainScroll)
-UnobtainListLayout.Padding = UDim.new(0, 2)
+UnobtainListLayout.Padding = UDim.new(0, 1)
 
 -- Nearby Plants UI (bottom of main UI)
 local NearbyFrame = Instance.new("Frame", Frame)
-NearbyFrame.Size = UDim2.new(1, 0, 0, 60)
-NearbyFrame.Position = UDim2.new(0, 0, 1, -60)
+NearbyFrame.Size = UDim2.new(1, 0, 0, 28)
+NearbyFrame.Position = UDim2.new(0, 0, 1, -28)
 NearbyFrame.BackgroundTransparency = 0.3
 NearbyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 NearbyFrame.BorderSizePixel = 0
 
 local NearbyLabel = Instance.new("TextLabel", NearbyFrame)
-NearbyLabel.Size = UDim2.new(1, 0, 0, 18)
+NearbyLabel.Size = UDim2.new(1, 0, 0, 14)
 NearbyLabel.Position = UDim2.new(0, 0, 0, 0)
 NearbyLabel.BackgroundTransparency = 1
-NearbyLabel.Text = "Nearby Plants"
+NearbyLabel.Text = "Nearby"
 NearbyLabel.TextColor3 = Color3.fromRGB(255,255,255)
 NearbyLabel.Font = Enum.Font.SourceSansBold
-NearbyLabel.TextSize = 14
+NearbyLabel.TextSize = 11
 
 local NearbyScroll = Instance.new("ScrollingFrame", NearbyFrame)
-NearbyScroll.Size = UDim2.new(1, 0, 1, -18)
-NearbyScroll.Position = UDim2.new(0, 0, 0, 18)
-NearbyScroll.CanvasSize = UDim2.new(0, 0, 0, 200)
+NearbyScroll.Size = UDim2.new(1, 0, 1, -14)
+NearbyScroll.Position = UDim2.new(0, 0, 0, 14)
+NearbyScroll.CanvasSize = UDim2.new(0, 0, 0, 100)
 NearbyScroll.BackgroundTransparency = 1
-NearbyScroll.ScrollBarThickness = 4
+NearbyScroll.ScrollBarThickness = 2
 
 local NearbyListLayout = Instance.new("UIListLayout", NearbyScroll)
-NearbyListLayout.Padding = UDim.new(0, 2)
+NearbyListLayout.Padding = UDim.new(0, 1)
 
 -- Parent columns to main frame!
 LegendCol.Parent = Frame
@@ -208,7 +212,6 @@ NearbyFrame.Parent = Frame
 local selectedTypes = {}
 
 local function createToggles()
-    -- Clear old
     for _, child in ipairs(ObtainScroll:GetChildren()) do
         if child:IsA("TextButton") then child:Destroy() end
     end
@@ -217,19 +220,17 @@ local function createToggles()
     end
 
     local cropsByCategory = getCategorizedTypes()
-
-    -- Obtainable Crops
     for _, rarity in ipairs(rarityOrder) do
         if cropCategories.Obtainable[rarity] then
             for _, crop in ipairs(cropCategories.Obtainable[rarity]) do
                 if cropsByCategory.Obtainable[rarity][crop] then
                     local btn = Instance.new("TextButton", ObtainScroll)
-                    btn.Size = UDim2.new(1, -8, 0, 18)
+                    btn.Size = UDim2.new(1, -4, 0, 14)
                     btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
                     btn.TextColor3 = Color3.new(1, 1, 1)
                     btn.Text = "[OFF] " .. crop
                     btn.AutoButtonColor = true
-                    btn.TextSize = 12
+                    btn.TextSize = 10
                     btn.Font = Enum.Font.SourceSansBold
                     btn.MouseButton1Click:Connect(function()
                         selectedTypes[crop] = not selectedTypes[crop]
@@ -239,19 +240,17 @@ local function createToggles()
             end
         end
     end
-
-    -- Unobtainable Crops
     for _, rarity in ipairs(rarityOrder) do
         if cropCategories.Unobtainable[rarity] then
             for _, crop in ipairs(cropCategories.Unobtainable[rarity]) do
                 if cropsByCategory.Unobtainable[rarity][crop] then
                     local btn = Instance.new("TextButton", UnobtainScroll)
-                    btn.Size = UDim2.new(1, -8, 0, 18)
+                    btn.Size = UDim2.new(1, -4, 0, 14)
                     btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
                     btn.TextColor3 = Color3.new(1, 1, 1)
                     btn.Text = "[OFF] " .. crop
                     btn.AutoButtonColor = true
-                    btn.TextSize = 12
+                    btn.TextSize = 10
                     btn.Font = Enum.Font.SourceSansBold
                     btn.MouseButton1Click:Connect(function()
                         selectedTypes[crop] = not selectedTypes[crop]
@@ -280,13 +279,13 @@ local function createToggleBtn(screenGui, frame)
     local ToggleBtn = Instance.new("TextButton")
     ToggleBtn.Name = "ShowHideESPBtn"
     ToggleBtn.Parent = screenGui
-    ToggleBtn.Size = UDim2.new(0, 48, 0, 48)
+    ToggleBtn.Size = UDim2.new(0, 38, 0, 38)
     ToggleBtn.Position = UDim2.new(0, 6, 0, 6)
     ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
     ToggleBtn.Text = "❌"
     ToggleBtn.Font = Enum.Font.SourceSansBold
-    ToggleBtn.TextSize = 30
+    ToggleBtn.TextSize = 22
     ToggleBtn.AutoButtonColor = true
     ToggleBtn.BackgroundTransparency = 0.15
     ToggleBtn.ZIndex = 100
@@ -323,13 +322,13 @@ local function createSizeToggleBtn(frame)
     local btn = Instance.new("TextButton")
     btn.Name = "SizeToggleBtn"
     btn.Parent = frame
-    btn.Size = UDim2.new(0, 36, 0, 36)
-    btn.Position = UDim2.new(1, -42, 0, 6)
+    btn.Size = UDim2.new(0, 30, 0, 30)
+    btn.Position = UDim2.new(1, -36, 0, 4)
     btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Text = "🔍"
     btn.Font = Enum.Font.SourceSansBold
-    btn.TextSize = 22
+    btn.TextSize = 18
     btn.AutoButtonColor = true
     btn.BackgroundTransparency = 0.13
     btn.ZIndex = 101
@@ -344,11 +343,17 @@ local function createSizeToggleBtn(frame)
         if compact then
             frame.Size = compactSize
             frame.Position = compactPos
-            btn.Text = "🔎"
+            ObtainCol.Size = UDim2.new(0, 70, 1, -20)
+            ObtainCol.Position = UDim2.new(0, 65, 0, 20)
+            UnobtainCol.Size = UDim2.new(0, 70, 1, -20)
+            UnobtainCol.Position = UDim2.new(0, 135, 0, 20)
         else
             frame.Size = normalSize
             frame.Position = normalPos
-            btn.Text = "🔍"
+            ObtainCol.Size = UDim2.new(0, 120, 1, -20)
+            ObtainCol.Position = UDim2.new(0, 65, 0, 20)
+            UnobtainCol.Size = UDim2.new(0, 120, 1, -20)
+            UnobtainCol.Position = UDim2.new(0, 185, 0, 20)
         end
     end)
 end
@@ -403,8 +408,8 @@ local function cleanup(validModels)
     end
 end
 
-local maxDistance = 50 -- Only show ESP within 50 studs
-local nearbyDistance = 20 -- Plants within 20 studs show in "Nearby Plants" UI
+local maxDistance = 40 -- Only show ESP within 40 studs
+local nearbyDistance = 15 -- Plants within 15 studs show in "Nearby" UI
 
 -- Update nearby plants UI
 local function updateNearbyPlants()
@@ -429,12 +434,12 @@ local function updateNearbyPlants()
     table.sort(found, function(a,b) return a.dist < b.dist end)
     for _, entry in ipairs(found) do
         local label = Instance.new("TextLabel", NearbyScroll)
-        label.Size = UDim2.new(1, -8, 0, 18)
+        label.Size = UDim2.new(1, -4, 0, 14)
         label.BackgroundTransparency = 1
         local rarity = cropSet[entry.model.Name:lower()] and cropSet[entry.model.Name:lower()].rarity or "Common"
         label.TextColor3 = rarityColors[rarity] or Color3.new(1,1,1)
         label.Font = Enum.Font.SourceSansBold
-        label.TextSize = 13
+        label.TextSize = 10
         label.Text = string.format("%s (%.1f)", entry.model.Name, entry.dist)
     end
 end
@@ -477,6 +482,6 @@ end
 spawn(function()
     while true do
         update()
-        wait(0.5) -- Reduced update rate for lag reduction
+        wait(0.7) -- Reduced update rate for lag reduction
     end
 end)
