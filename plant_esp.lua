@@ -315,7 +315,7 @@ local function createToggleBtn(screenGui, frame)
     ToggleBtn.Position = UDim2.new(0, 6, 0, 6)
     ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
-    ToggleBtn.Text = "✖"
+    ToggleBtn.Text = "âœ–"
     ToggleBtn.Font = Enum.Font.SourceSansBold
     ToggleBtn.TextSize = 22
     ToggleBtn.AutoButtonColor = true
@@ -339,7 +339,7 @@ local function createToggleBtn(screenGui, frame)
     ToggleBtn.MouseButton1Click:Connect(function()
         uiVisible = not uiVisible
         frame.Visible = uiVisible
-        ToggleBtn.Text = uiVisible and "✖" or "⟳"
+        ToggleBtn.Text = uiVisible and "âœ–" or "âŸ³"
     end)
 end
 
@@ -358,7 +358,7 @@ local function createSizeToggleBtn(frame)
     btn.Position = UDim2.new(1, -36, 0, 2)
     btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Text = "🔍"
+    btn.Text = "ðŸ”"
     btn.Font = Enum.Font.SourceSansBold
     btn.TextSize = 18
     btn.AutoButtonColor = true
@@ -517,7 +517,7 @@ local function update()
                 label = label .. "\nWt.: " .. tostring(weight)
             end
             if price then
-                label = label .. "\nPrice: " .. tostring(price)
+                label = label .. "\nSell Price: " .. tostring(price)
             end
             createESP(model, label)
             validModels[model] = true
