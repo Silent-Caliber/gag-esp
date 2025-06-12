@@ -62,13 +62,12 @@ local function getCategorizedTypes()
     return cropsByCategory
 end
 
--- UI Sizes (adjusted for Infinite Sprinkler row)
-local normalSize = UDim2.new(0, 340, 0, 250) -- +30 height
-local compactSize = UDim2.new(0, 210, 0, 160) -- +30 height
+-- UI Sizes and setup (same as your original code) --
+local normalSize = UDim2.new(0, 340, 0, 250)
+local compactSize = UDim2.new(0, 210, 0, 160)
 local normalPos = UDim2.new(0, 10, 0, 60)
 local compactPos = UDim2.new(0, 10, 0, 20)
 
--- UI Setup
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PlantESPSelector"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
@@ -204,7 +203,6 @@ NearbyScroll.ScrollBarThickness = 2
 local NearbyListLayout = Instance.new("UIListLayout", NearbyScroll)
 NearbyListLayout.Padding = UDim.new(0, 1)
 
--- Infinite Sprinkler UI Row (below NearbyFrame)
 local SprinklerFrame = Instance.new("Frame", Frame)
 SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
 SprinklerFrame.Position = UDim2.new(0, 65, 1, -28)
@@ -302,7 +300,6 @@ spawn(function()
     end
 end)
 
--- Toggle UI Button (top left)
 local function createToggleBtn(screenGui, frame)
     if screenGui:FindFirstChild("ShowHideESPBtn") then
         screenGui.ShowHideESPBtn:Destroy()
@@ -345,7 +342,6 @@ end
 
 createToggleBtn(ScreenGui, Frame)
 
--- UI Size Toggle Button (top right)
 local function createSizeToggleBtn(frame)
     if frame:FindFirstChild("SizeToggleBtn") then
         frame.SizeToggleBtn:Destroy()
@@ -400,7 +396,6 @@ end
 
 createSizeToggleBtn(Frame)
 
--- ESP Core
 local function getPP(model)
     if model.PrimaryPart then return model.PrimaryPart end
     for _,c in ipairs(model:GetChildren()) do
@@ -520,7 +515,7 @@ local function update()
                 label = label .. "\nWt.: " .. tostring(weight)
             end
             if price then
-                label = label .. "\nSell Price: " .. tostring(price)
+                label = label .. "\nPrice: " .. tostring(price)
             end
             createESP(model, label)
             validModels[model] = true
@@ -530,7 +525,6 @@ local function update()
     updateNearbyPlants()
 end
 
--- Infinite Sprinkler Logic
 local infiniteSprinklerEnabled = false
 
 local function sprinklerAction()
@@ -562,7 +556,6 @@ SprinklerToggleBtn.MouseButton1Click:Connect(function()
     SprinklerToggleBtn.BackgroundColor3 = infiniteSprinklerEnabled and Color3.fromRGB(80, 200, 80) or Color3.fromRGB(50, 50, 50)
 end)
 
--- Main loops
 spawn(function()
     while true do
         update()
