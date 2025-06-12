@@ -1,4 +1,4 @@
--- Grow a Garden ESP: Three-Column UI (Obtainable, Unobtainable, Cosmetics/Objects)
+-- Grow a Garden ESP: Only Crops/Plants (Obtainable & Unobtainable)
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -42,27 +42,24 @@ local function getCategorizedTypes()
             cropsByCategory[obtain][rarity] = {}
         end
     end
-    local others = {}
     for _, model in ipairs(workspace:GetDescendants()) do
         if model:IsA("Model") then
             local info = cropSet[model.Name:lower()]
             if info then
                 cropsByCategory[info.obtain][info.rarity][model.Name] = true
-            else
-                others[model.Name] = true
             end
         end
     end
-    return cropsByCategory, others
+    return cropsByCategory
 end
 
--- UI Setup: Three Columns, Draggable, Scrollable
+-- UI Setup: Two Columns, Draggable, Scrollable
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PlantESPSelector"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 660, 0, 420)
+Frame.Size = UDim2.new(0, 440, 0, 420)
 Frame.Position = UDim2.new(0, 10, 0, 100)
 Frame.BackgroundTransparency = 0.2
 Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -103,7 +100,7 @@ ObtainScroll.ScrollBarThickness = 6
 local ObtainListLayout = Instance.new("UIListLayout", ObtainScroll)
 ObtainListLayout.Padding = UDim.new(0, 2)
 
--- Middle: Unobtainable Crops
+-- Right: Unobtainable Crops
 local UnobtainCol = Instance.new("Frame", Frame)
 UnobtainCol.Size = UDim2.new(0, 210, 1, -28)
 UnobtainCol.Position = UDim2.new(0, 220, 0, 28)
@@ -128,35 +125,9 @@ UnobtainScroll.ScrollBarThickness = 6
 local UnobtainListLayout = Instance.new("UIListLayout", UnobtainScroll)
 UnobtainListLayout.Padding = UDim.new(0, 2)
 
--- Right: Cosmetics/Objects
-local OtherCol = Instance.new("Frame", Frame)
-OtherCol.Size = UDim2.new(0, 210, 1, -28)
-OtherCol.Position = UDim2.new(0, 440, 0, 28)
-OtherCol.BackgroundTransparency = 1
-
-local OtherLabel = Instance.new("TextLabel", OtherCol)
-OtherLabel.Size = UDim2.new(1, 0, 0, 18)
-OtherLabel.Position = UDim2.new(0, 0, 0, 0)
-OtherLabel.BackgroundTransparency = 1
-OtherLabel.Text = "Cosmetics / Objects"
-OtherLabel.TextColor3 = Color3.fromRGB(120, 200, 255)
-OtherLabel.Font = Enum.Font.SourceSansBold
-OtherLabel.TextSize = 15
-
-local OtherScroll = Instance.new("ScrollingFrame", OtherCol)
-OtherScroll.Size = UDim2.new(1, 0, 1, -20)
-OtherScroll.Position = UDim2.new(0, 0, 0, 20)
-OtherScroll.CanvasSize = UDim2.new(0, 0, 0, 1600)
-OtherScroll.BackgroundTransparency = 1
-OtherScroll.ScrollBarThickness = 6
-
-local OtherListLayout = Instance.new("UIListLayout", OtherScroll)
-OtherListLayout.Padding = UDim.new(0, 2)
-
--- Parent columns to main frame (this is important!)
+-- Parent columns to main frame!
 ObtainCol.Parent = Frame
 UnobtainCol.Parent = Frame
-OtherCol.Parent = Frame
 
 local selectedTypes = {}
 
@@ -189,11 +160,8 @@ local function createToggles()
     for _, child in ipairs(UnobtainScroll:GetChildren()) do
         if child:IsA("TextButton") or (child:IsA("TextLabel")) then child:Destroy() end
     end
-    for _, child in ipairs(OtherScroll:GetChildren()) do
-        if child:IsA("TextButton") then child:Destroy() end
-    end
 
-    local cropsByCategory, others = getCategorizedTypes()
+    local cropsByCategory = getCategorizedTypes()
 
     -- Obtainable Crops
     for _, rarity in ipairs({"Common","Uncommon","Rare","Legendary","Mythical","Divine","Prismatic"}) do
@@ -239,22 +207,6 @@ local function createToggles()
                 end
             end
         end
-    end
-
-    -- Cosmetics/Objects
-    for otherType, _ in pairs(others) do
-        local btn = Instance.new("TextButton", OtherScroll)
-        btn.Size = UDim2.new(1, -8, 0, 18)
-        btn.BackgroundColor3 = Color3.fromRGB(70, 50, 50)
-        btn.TextColor3 = Color3.new(1, 1, 1)
-        btn.Text = "[OFF] " .. otherType
-        btn.AutoButtonColor = true
-        btn.TextSize = 12
-        btn.Font = Enum.Font.SourceSansBold
-        btn.MouseButton1Click:Connect(function()
-            selectedTypes[otherType] = not selectedTypes[otherType]
-            btn.Text = (selectedTypes[otherType] and "[ON] " or "[OFF] ") .. otherType
-        end)
     end
 end
 
