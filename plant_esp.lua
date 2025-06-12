@@ -153,6 +153,11 @@ OtherScroll.ScrollBarThickness = 6
 local OtherListLayout = Instance.new("UIListLayout", OtherScroll)
 OtherListLayout.Padding = UDim.new(0, 2)
 
+-- Parent columns to main frame (this is important!)
+ObtainCol.Parent = Frame
+UnobtainCol.Parent = Frame
+OtherCol.Parent = Frame
+
 local selectedTypes = {}
 
 local function makeSectionLabel(parent, text, color)
