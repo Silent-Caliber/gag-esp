@@ -1,46 +1,69 @@
--- Grow a Garden ESP: Dual Column, All Fruits/Plants (2025)
+-- Grow a Garden ESP: Categorized by Rarity & Obtainability
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local espMap = {}
  
--- All known fruits/plants in Grow a Garden (2025)
-local plantFruitNames = {
-    "Apple", "Banana", "Blueberry", "Cacao", "Coconut", "Corn", "Daffodil", "Dragonfruit", "Fig", "Flower", "Glowshroom",
-    "Grape", "Guava", "HoneyCrafter", "HoneyStation", "Kiwi", "Lemon", "Lime", "Lychee", "Mango", "Melon", "Orange", "Papaya",
-    "Peach", "Pear", "Pineapple", "Plum", "Pomegranate", "Pumpkin", "Raspberry", "Strawberry", "Tomato", "Watermelon",
-    "Blood Banana", "Common Egg", "FlowerBed", "Cactus", "Cranberry", "Starfruit", "Passionfruit", "Durian", "Jackfruit",
-    "Tangerine", "Apricot", "Mandarin", "Cherry", "Avocado", "Mulberry", "Blackberry", "Currant", "Gooseberry", "Date",
-    "Olive", "Persimmon", "Quince", "Sapote", "Soursop", "Breadfruit", "Longan", "Rambutan", "Salak", "Jabuticaba",
-    "Mangosteen", "Miracle Berry", "Tamarind", "Yuzu", "Custard Apple", "Sugar Apple", "Ackee", "Feijoa", "Medlar"
+-- Crop List by Rarity and Obtainability
+local cropCategories = {
+    Obtainable = {
+        Common = {"Carrot", "Strawberry"},
+        Uncommon = {"Blueberry", "Manuka Flower", "Orange Tulip", "Rose", "Lavender"},
+        Rare = {"Tomato", "Corn", "Dandelion", "Daffodil", "Nectarshade", "Raspberry", "Foxglove"},
+        Legendary = {"Watermelon", "Pumpkin", "Apple", "Bamboo", "Lilac", "Lumira"},
+        Mythical = {"Coconut", "Cactus", "Dragon Fruit", "Honeysuckle", "Mango", "Nectarine", "Peach", "Pineapple", "Pink Lily", "Purple Dahlia"},
+        Divine = {"Grape", "Mushroom", "Pepper", "Cacao", "Hive Fruit", "Sunflower"},
+        Prismatic = {"Beanstalk", "Ember Lily"},
+    },
+    Unobtainable = {
+        Common = {"Chocolate crops"},
+        Uncommon = {"Red Lollipop", "Nightshade"},
+        Rare = {"Candy Sunflower", "Mint", "Glowshroom", "Pear"},
+        Legendary = {"Cranberry", "Durian", "Easter Egg", "Papaya"},
+        Mythical = {"Celestiberry", "Blood Banana", "Moon Melon", "Eggplant", "Passionfruit", "Lemon", "Banana"},
+        Divine = {"Cherry Blossom", "Crimson Vine", "Candy Blossom", "Lotus", "Venus Fly Trap", "Cursed Fruit", "Soul Fruit", "Mega Mushroom", "Moon Blossom", "Moon Mango"},
+    }
 }
-local plantFruitSet = {}
-for _, name in ipairs(plantFruitNames) do
-    plantFruitSet[name:lower()] = true
+ 
+-- Make a set for fast lookup
+local cropSet = {}
+for obtain, rarities in pairs(cropCategories) do
+    for rarity, crops in pairs(rarities) do
+        for _, crop in ipairs(crops) do
+            cropSet[crop:lower()] = {obtain=obtain, rarity=rarity}
+        end
+    end
 end
  
 -- Categorize models
 local function getCategorizedTypes()
-    local plants, others = {}, {}
+    local cropsByCategory = {}
+    local others = {}
+    for obtain, rarities in pairs(cropCategories) do
+        cropsByCategory[obtain] = {}
+        for rarity, _ in pairs(rarities) do
+            cropsByCategory[obtain][rarity] = {}
+        end
+    end
     for _, model in ipairs(workspace:GetDescendants()) do
         if model:IsA("Model") then
-            local lname = model.Name:lower()
-            if plantFruitSet[lname] then
-                plants[model.Name] = true
+            local info = cropSet[model.Name:lower()]
+            if info then
+                cropsByCategory[info.obtain][info.rarity][model.Name] = true
             else
                 others[model.Name] = true
             end
         end
     end
-    return plants, others
+    return cropsByCategory, others
 end
  
--- UI Setup: Dual Column, Scrollable, Draggable
+-- UI Setup: Scrollable, Draggable, Categorized
 local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
 ScreenGui.Name = "PlantESPSelector"
  
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 260, 0, 260)
+Frame.Size = UDim2.new(0, 340, 0, 400)
 Frame.Position = UDim2.new(0, 10, 0, 100)
 Frame.BackgroundTransparency = 0.2
 Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -48,40 +71,31 @@ Frame.Active = true
 Frame.Draggable = true
  
 local Title = Instance.new("TextLabel", Frame)
-Title.Size = UDim2.new(1, 0, 0, 20)
+Title.Size = UDim2.new(1, 0, 0, 24)
 Title.Position = UDim2.new(0, 0, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "Plant ESP"
+Title.Text = "Grow a Garden ESP"
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 16
+Title.TextSize = 18
  
--- Left Column: Plants/Fruits
-local PlantScroll = Instance.new("ScrollingFrame", Frame)
-PlantScroll.Size = UDim2.new(0, 120, 1, -24)
-PlantScroll.Position = UDim2.new(0, 0, 0, 24)
-PlantScroll.CanvasSize = UDim2.new(0, 0, 0, 800)
-PlantScroll.BackgroundTransparency = 1
-PlantScroll.ScrollBarThickness = 4
+-- Left: Crops, Right: Other Objects
+local CropScroll = Instance.new("ScrollingFrame", Frame)
+CropScroll.Size = UDim2.new(0, 210, 1, -28)
+CropScroll.Position = UDim2.new(0, 0, 0, 28)
+CropScroll.CanvasSize = UDim2.new(0, 0, 0, 1600)
+CropScroll.BackgroundTransparency = 1
+CropScroll.ScrollBarThickness = 6
  
-local PlantLabel = Instance.new("TextLabel", PlantScroll)
-PlantLabel.Size = UDim2.new(1, 0, 0, 18)
-PlantLabel.BackgroundTransparency = 1
-PlantLabel.Text = "Plants/Fruits"
-PlantLabel.TextColor3 = Color3.fromRGB(90, 255, 90)
-PlantLabel.Font = Enum.Font.SourceSansBold
-PlantLabel.TextSize = 13
+local CropListLayout = Instance.new("UIListLayout", CropScroll)
+CropListLayout.Padding = UDim.new(0, 2)
  
-local PlantListLayout = Instance.new("UIListLayout", PlantScroll)
-PlantListLayout.Padding = UDim.new(0, 2)
- 
--- Right Column: Other Objects
 local OtherScroll = Instance.new("ScrollingFrame", Frame)
-OtherScroll.Size = UDim2.new(0, 120, 1, -24)
-OtherScroll.Position = UDim2.new(0, 130, 0, 24)
+OtherScroll.Size = UDim2.new(0, 120, 1, -28)
+OtherScroll.Position = UDim2.new(0, 220, 0, 28)
 OtherScroll.CanvasSize = UDim2.new(0, 0, 0, 800)
 OtherScroll.BackgroundTransparency = 1
-OtherScroll.ScrollBarThickness = 4
+OtherScroll.ScrollBarThickness = 6
  
 local OtherLabel = Instance.new("TextLabel", OtherScroll)
 OtherLabel.Size = UDim2.new(1, 0, 0, 18)
@@ -96,31 +110,62 @@ OtherListLayout.Padding = UDim.new(0, 2)
  
 local selectedTypes = {}
  
+local function makeSectionLabel(parent, text, color)
+    local label = Instance.new("TextLabel", parent)
+    label.Size = UDim2.new(1, 0, 0, 18)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = color
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 14
+    return label
+end
+ 
+local rarityColors = {
+    Common = Color3.fromRGB(180, 180, 180),
+    Uncommon = Color3.fromRGB(80, 200, 80),
+    Rare = Color3.fromRGB(80, 120, 255),
+    Legendary = Color3.fromRGB(255, 215, 0),
+    Mythical = Color3.fromRGB(255, 100, 255),
+    Divine = Color3.fromRGB(255, 90, 90),
+    Prismatic = Color3.fromRGB(100,255,255),
+}
+ 
 local function createToggles()
-    -- Clear old buttons
-    for _, child in ipairs(PlantScroll:GetChildren()) do
-        if child:IsA("TextButton") then child:Destroy() end
+    -- Clear old
+    for _, child in ipairs(CropScroll:GetChildren()) do
+        if child:IsA("TextButton") or child:IsA("TextLabel") then child:Destroy() end
     end
     for _, child in ipairs(OtherScroll:GetChildren()) do
         if child:IsA("TextButton") then child:Destroy() end
     end
+    OtherLabel.Parent = OtherScroll
  
-    local plants, others = getCategorizedTypes()
+    local cropsByCategory, others = getCategorizedTypes()
  
-    -- Plants/Fruits buttons
-    for plantType, _ in pairs(plants) do
-        local btn = Instance.new("TextButton", PlantScroll)
-        btn.Size = UDim2.new(1, -8, 0, 18)
-        btn.BackgroundColor3 = Color3.fromRGB(50, 80, 50)
-        btn.TextColor3 = Color3.new(1, 1, 1)
-        btn.Text = "[OFF] " .. plantType
-        btn.AutoButtonColor = true
-        btn.TextSize = 12
-        btn.Font = Enum.Font.SourceSansBold
-        btn.MouseButton1Click:Connect(function()
-            selectedTypes[plantType] = not selectedTypes[plantType]
-            btn.Text = (selectedTypes[plantType] and "[ON] " or "[OFF] ") .. plantType
-        end)
+    for obtainKey, obtainLabel in pairs({Obtainable="Obtainable Crops", Unobtainable="Unobtainable Crops"}) do
+        makeSectionLabel(CropScroll, obtainLabel, Color3.fromRGB(255,255,255))
+        for _, rarity in ipairs({"Common","Uncommon","Rare","Legendary","Mythical","Divine","Prismatic"}) do
+            if cropCategories[obtainKey][rarity] then
+                makeSectionLabel(CropScroll, "  "..rarity, rarityColors[rarity] or Color3.new(1,1,1))
+                for _, crop in ipairs(cropCategories[obtainKey][rarity]) do
+                    if cropsByCategory[obtainKey][rarity][crop] then
+                        local btn = Instance.new("TextButton", CropScroll)
+                        btn.Size = UDim2.new(1, -8, 0, 18)
+                        btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
+                        btn.TextColor3 = Color3.new(1, 1, 1)
+                        btn.Text = "[OFF] " .. crop
+                        btn.AutoButtonColor = true
+                        btn.TextSize = 12
+                        btn.Font = Enum.Font.SourceSansBold
+                        btn.MouseButton1Click:Connect(function()
+                            selectedTypes[crop] = not selectedTypes[crop]
+                            btn.Text = (selectedTypes[crop] and "[ON] " or "[OFF] ") .. crop
+                        end)
+                    end
+                end
+            end
+        end
     end
  
     -- Other objects buttons
