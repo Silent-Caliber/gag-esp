@@ -1,4 +1,5 @@
--- Grow a Garden ESP: Fixed Rarity Legend, No Repeated Headings
+-- Grow a Garden ESP: Only Crops/Plants, Rarity Legend, Show/Hide UI Button
+
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -234,6 +235,29 @@ spawn(function()
         wait(10)
         createToggles()
     end
+end)
+
+-- Toggle Button (top left, always visible)
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Parent = ScreenGui
+ToggleBtn.Size = UDim2.new(0, 40, 0, 40)
+ToggleBtn.Position = UDim2.new(0, 10, 0, 40)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
+ToggleBtn.Text = "☰"
+ToggleBtn.Font = Enum.Font.SourceSansBold
+ToggleBtn.TextSize = 24
+ToggleBtn.AutoButtonColor = true
+ToggleBtn.BackgroundTransparency = 0.2
+ToggleBtn.ZIndex = 10
+
+-- Hide UI by default? (set to false if you want UI shown on start)
+local uiVisible = true
+Frame.Visible = uiVisible
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    uiVisible = not uiVisible
+    Frame.Visible = uiVisible
 end)
 
 -- ESP Core
