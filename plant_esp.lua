@@ -1,4 +1,4 @@
--- Grow a Garden ESP: Crops Only, Rarity Legend, Circular Toggle, Size Toggle, Lag Fix, Nearby Plants UI
+-- Grow a Garden ESP: Crops Only, Rarity Legend, Circular Toggle, Top-Right Size Toggle, Lag Fix, Nearby Plants UI
 
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -65,14 +65,20 @@ local function getCategorizedTypes()
     return cropsByCategory
 end
 
+-- UI Sizes
+local normalSize = UDim2.new(0, 530, 0, 420)
+local compactSize = UDim2.new(0, 320, 0, 260)
+local normalPos = UDim2.new(0, 60, 0, 100)
+local compactPos = UDim2.new(0, 20, 0, 60)
+
 -- UI Setup: Fixed Legend + Two Columns, Draggable, Scrollable
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PlantESPSelector"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 530, 0, 420)
-Frame.Position = UDim2.new(0, 60, 0, 100)
+Frame.Size = normalSize
+Frame.Position = normalPos
 Frame.BackgroundTransparency = 0.2
 Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Frame.Active = true
@@ -308,7 +314,7 @@ end
 
 createToggleBtn(ScreenGui, Frame)
 
--- UI Size Toggle Button (bottom right of the UI panel)
+-- UI Size Toggle Button (top right of the UI panel, magnifier)
 local function createSizeToggleBtn(frame)
     if frame:FindFirstChild("SizeToggleBtn") then
         frame.SizeToggleBtn:Destroy()
@@ -318,7 +324,7 @@ local function createSizeToggleBtn(frame)
     btn.Name = "SizeToggleBtn"
     btn.Parent = frame
     btn.Size = UDim2.new(0, 36, 0, 36)
-    btn.Position = UDim2.new(1, -42, 1, -42)
+    btn.Position = UDim2.new(1, -42, 0, 6)
     btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Text = "🔍"
@@ -332,10 +338,6 @@ local function createSizeToggleBtn(frame)
     corner.CornerRadius = UDim.new(1, 0)
 
     local compact = false
-    local normalSize = UDim2.new(0, 530, 0, 420)
-    local compactSize = UDim2.new(0, 320, 0, 260)
-    local normalPos = UDim2.new(0, 60, 0, 100)
-    local compactPos = UDim2.new(0, 20, 0, 60)
 
     btn.MouseButton1Click:Connect(function()
         compact = not compact
@@ -401,7 +403,7 @@ local function cleanup(validModels)
     end
 end
 
-local maxDistance = 60 -- Only show ESP within 60 studs
+local maxDistance = 50 -- Only show ESP within 50 studs
 local nearbyDistance = 20 -- Plants within 20 studs show in "Nearby Plants" UI
 
 -- Update nearby plants UI
@@ -475,6 +477,6 @@ end
 spawn(function()
     while true do
         update()
-        wait(0.35) -- Reduced update rate for lag reduction
+        wait(0.5) -- Reduced update rate for lag reduction
     end
 end)
