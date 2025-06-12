@@ -1,7 +1,14 @@
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local espMap = {}
+
+-- Replace these with your game's actual RemoteEvent names
+local PlaceSprinklerEvent = ReplicatedStorage:WaitForChild("PlaceSprinkler")
+local ShovelRemoveEvent = ReplicatedStorage:WaitForChild("ShovelRemove")
+
+local basicSprinklerName = "Basic Sprinkler" -- exact name of basic sprinkler model
 
 local cropCategories = {
     Obtainable = {
@@ -528,29 +535,34 @@ local function update()
 end
 
 -- Infinite Sprinkler Logic
+
 local infiniteSprinklerEnabled = false
 
-local function sprinklerAction()
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
+local function useShovelOn(model)
+    ShovelRemoveEvent:FireServer(model)
+end
 
-    local range = 15
-    for _, model in ipairs(workspace:GetDescendants()) do
-        if model:IsA("Model") and cropSet[model.Name:lower()] then
-            local pp = getPP(model)
-            if pp then
-                local dist = (pp.Position - root.Position).Magnitude
-                if dist <= range then
-                    -- Replace this with your game's actual watering method
-                    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                    local WaterEvent = ReplicatedStorage:FindFirstChild("WaterPlant")
-                    if WaterEvent and WaterEvent:IsA("RemoteEvent") then
-                        WaterEvent:FireServer(model)
+local function rapidPlaceRemoveBasicSprinkler()
+    for i = 1, 5 do
+        -- Place basic sprinkler
+        PlaceSprinklerEvent:FireServer(basicSprinklerName)
+        wait(0.1)
+        
+        -- Remove nearby basic sprinklers using shovel
+        local char = LocalPlayer.Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        if root then
+            for _, model in ipairs(workspace:GetDescendants()) do
+                if model:IsA("Model") and model.Name == basicSprinklerName then
+                    local pp = getPP(model)
+                    if pp and (pp.Position - root.Position).Magnitude <= 10 then
+                        useShovelOn(model)
                     end
                 end
             end
         end
+        
+        wait(0.1)
     end
 end
 
@@ -558,14 +570,14 @@ SprinklerToggleBtn.MouseButton1Click:Connect(function()
     infiniteSprinklerEnabled = not infiniteSprinklerEnabled
     SprinklerToggleBtn.Text = infiniteSprinklerEnabled and "ON" or "OFF"
     SprinklerToggleBtn.BackgroundColor3 = infiniteSprinklerEnabled and Color3.fromRGB(80, 200, 80) or Color3.fromRGB(50, 50, 50)
-end)
 
-spawn(function()
-    while true do
-        if infiniteSprinklerEnabled then
-            sprinklerAction()
-        end
-        wait(3)
+    if infiniteSprinklerEnabled then
+        spawn(function()
+            while infiniteSprinklerEnabled do
+                rapidPlaceRemoveBasicSprinkler()
+                wait(1)
+            end
+        end)
     end
 end)
 
