@@ -1,4 +1,4 @@
--- Grow a Garden ESP: Crops Only, Rarity Legend, Circular Toggle, Lag Fix, Nearby Plants UI
+-- Grow a Garden ESP: Crops Only, Rarity Legend, Circular Toggle, Size Toggle, Lag Fix, Nearby Plants UI
 
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -267,7 +267,6 @@ end)
 
 -- Circular Show/Hide UI Button (top left, always visible, X/☰ toggle)
 local function createToggleBtn(screenGui, frame)
-    -- Remove any previous button
     if screenGui:FindFirstChild("ShowHideESPBtn") then
         screenGui.ShowHideESPBtn:Destroy()
     end
@@ -287,11 +286,9 @@ local function createToggleBtn(screenGui, frame)
     ToggleBtn.ZIndex = 100
     ToggleBtn.BorderSizePixel = 0
 
-    -- Make it a perfect circle
     local corner = Instance.new("UICorner", ToggleBtn)
     corner.CornerRadius = UDim.new(1, 0)
 
-    -- Add drop shadow for visibility
     local shadow = Instance.new("ImageLabel", ToggleBtn)
     shadow.BackgroundTransparency = 1
     shadow.Image = "rbxassetid://1316045217"
@@ -310,6 +307,51 @@ local function createToggleBtn(screenGui, frame)
 end
 
 createToggleBtn(ScreenGui, Frame)
+
+-- UI Size Toggle Button (bottom right of the UI panel)
+local function createSizeToggleBtn(frame)
+    if frame:FindFirstChild("SizeToggleBtn") then
+        frame.SizeToggleBtn:Destroy()
+    end
+
+    local btn = Instance.new("TextButton")
+    btn.Name = "SizeToggleBtn"
+    btn.Parent = frame
+    btn.Size = UDim2.new(0, 36, 0, 36)
+    btn.Position = UDim2.new(1, -42, 1, -42)
+    btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Text = "🔍"
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 22
+    btn.AutoButtonColor = true
+    btn.BackgroundTransparency = 0.13
+    btn.ZIndex = 101
+    btn.BorderSizePixel = 0
+    local corner = Instance.new("UICorner", btn)
+    corner.CornerRadius = UDim.new(1, 0)
+
+    local compact = false
+    local normalSize = UDim2.new(0, 530, 0, 420)
+    local compactSize = UDim2.new(0, 320, 0, 260)
+    local normalPos = UDim2.new(0, 60, 0, 100)
+    local compactPos = UDim2.new(0, 20, 0, 60)
+
+    btn.MouseButton1Click:Connect(function()
+        compact = not compact
+        if compact then
+            frame.Size = compactSize
+            frame.Position = compactPos
+            btn.Text = "🔎"
+        else
+            frame.Size = normalSize
+            frame.Position = normalPos
+            btn.Text = "🔍"
+        end
+    end)
+end
+
+createSizeToggleBtn(Frame)
 
 -- ESP Core
 local function getPP(model)
