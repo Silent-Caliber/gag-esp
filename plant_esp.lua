@@ -1,5 +1,3 @@
--- Grow a Garden ESP: Compact, Clean, Aligned, Transparent Backgrounds, "Wt." Label
-
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -64,13 +62,13 @@ local function getCategorizedTypes()
     return cropsByCategory
 end
 
--- UI Sizes
-local normalSize = UDim2.new(0, 340, 0, 220)
-local compactSize = UDim2.new(0, 210, 0, 130)
+-- UI Sizes (adjusted for Infinite Sprinkler row)
+local normalSize = UDim2.new(0, 340, 0, 250) -- +30 height
+local compactSize = UDim2.new(0, 210, 0, 160) -- +30 height
 local normalPos = UDim2.new(0, 10, 0, 60)
 local compactPos = UDim2.new(0, 10, 0, 20)
 
--- UI Setup: Two Columns, Each With Own Background, Draggable, Scrollable
+-- UI Setup
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PlantESPSelector"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
@@ -78,11 +76,10 @@ ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 local Frame = Instance.new("Frame", ScreenGui)
 Frame.Size = normalSize
 Frame.Position = normalPos
-Frame.BackgroundTransparency = 1 -- fully transparent, backgrounds are on columns
+Frame.BackgroundTransparency = 1
 Frame.Active = true
 Frame.Draggable = true
 
--- Title Bar with black transparent background
 local TitleBar = Instance.new("Frame", Frame)
 TitleBar.Size = UDim2.new(1, 0, 0, 22)
 TitleBar.Position = UDim2.new(0, 0, 0, 0)
@@ -99,7 +96,6 @@ Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 14
 
--- Fixed Rarity Legend (leftmost)
 local LegendCol = Instance.new("Frame", Frame)
 LegendCol.Size = UDim2.new(0, 65, 1, -22)
 LegendCol.Position = UDim2.new(0, 0, 0, 22)
@@ -130,9 +126,8 @@ for _, rarity in ipairs(rarityOrder) do
     label.TextSize = 12
 end
 
--- Obtainable Crops Column
 local ObtainCol = Instance.new("Frame", Frame)
-ObtainCol.Size = UDim2.new(0, 120, 1, -22)
+ObtainCol.Size = UDim2.new(0, 120, 1, -52)
 ObtainCol.Position = UDim2.new(0, 65, 0, 22)
 ObtainCol.BackgroundTransparency = 0.2
 ObtainCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -157,9 +152,8 @@ ObtainScroll.ScrollBarThickness = 4
 local ObtainListLayout = Instance.new("UIListLayout", ObtainScroll)
 ObtainListLayout.Padding = UDim.new(0, 1)
 
--- Unobtainable Crops Column
 local UnobtainCol = Instance.new("Frame", Frame)
-UnobtainCol.Size = UDim2.new(0, 120, 1, -22)
+UnobtainCol.Size = UDim2.new(0, 120, 1, -52)
 UnobtainCol.Position = UDim2.new(0, 185, 0, 22)
 UnobtainCol.BackgroundTransparency = 0.2
 UnobtainCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -184,10 +178,9 @@ UnobtainScroll.ScrollBarThickness = 4
 local UnobtainListLayout = Instance.new("UIListLayout", UnobtainScroll)
 UnobtainListLayout.Padding = UDim.new(0, 1)
 
--- Nearby Plants UI (bottom, perfectly aligned)
 local NearbyFrame = Instance.new("Frame", Frame)
 NearbyFrame.Size = UDim2.new(0, 275, 0, 24)
-NearbyFrame.Position = UDim2.new(0, 65, 1, -24)
+NearbyFrame.Position = UDim2.new(0, 65, 1, -52)
 NearbyFrame.BackgroundTransparency = 0.3
 NearbyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 NearbyFrame.BorderSizePixel = 0
@@ -211,10 +204,42 @@ NearbyScroll.ScrollBarThickness = 2
 local NearbyListLayout = Instance.new("UIListLayout", NearbyScroll)
 NearbyListLayout.Padding = UDim.new(0, 1)
 
+-- Infinite Sprinkler UI Row (below NearbyFrame)
+local SprinklerFrame = Instance.new("Frame", Frame)
+SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
+SprinklerFrame.Position = UDim2.new(0, 65, 1, -28)
+SprinklerFrame.BackgroundTransparency = 0.3
+SprinklerFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+SprinklerFrame.BorderSizePixel = 0
+
+local SprinklerLabel = Instance.new("TextLabel", SprinklerFrame)
+SprinklerLabel.Size = UDim2.new(0.6, 0, 1, 0)
+SprinklerLabel.Position = UDim2.new(0, 4, 0, 0)
+SprinklerLabel.BackgroundTransparency = 1
+SprinklerLabel.Text = "Infinite Sprinkler"
+SprinklerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+SprinklerLabel.Font = Enum.Font.SourceSansBold
+SprinklerLabel.TextSize = 12
+SprinklerLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local SprinklerToggleBtn = Instance.new("TextButton", SprinklerFrame)
+SprinklerToggleBtn.Size = UDim2.new(0, 50, 0, 18)
+SprinklerToggleBtn.Position = UDim2.new(1, -54, 0.5, -9)
+SprinklerToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+SprinklerToggleBtn.TextColor3 = Color3.new(1, 1, 1)
+SprinklerToggleBtn.Text = "OFF"
+SprinklerToggleBtn.Font = Enum.Font.SourceSansBold
+SprinklerToggleBtn.TextSize = 14
+SprinklerToggleBtn.AutoButtonColor = true
+SprinklerToggleBtn.BorderSizePixel = 0
+local corner = Instance.new("UICorner", SprinklerToggleBtn)
+corner.CornerRadius = UDim.new(0, 6)
+
 LegendCol.Parent = Frame
 ObtainCol.Parent = Frame
 UnobtainCol.Parent = Frame
 NearbyFrame.Parent = Frame
+SprinklerFrame.Parent = Frame
 
 local selectedTypes = {}
 
@@ -277,7 +302,7 @@ spawn(function()
     end
 end)
 
--- Circular Show/Hide UI Button (top left, always visible, X/☰ toggle)
+-- Toggle UI Button (top left)
 local function createToggleBtn(screenGui, frame)
     if screenGui:FindFirstChild("ShowHideESPBtn") then
         screenGui.ShowHideESPBtn:Destroy()
@@ -290,7 +315,7 @@ local function createToggleBtn(screenGui, frame)
     ToggleBtn.Position = UDim2.new(0, 6, 0, 6)
     ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
-    ToggleBtn.Text = "❌"
+    ToggleBtn.Text = "✖"
     ToggleBtn.Font = Enum.Font.SourceSansBold
     ToggleBtn.TextSize = 22
     ToggleBtn.AutoButtonColor = true
@@ -314,13 +339,13 @@ local function createToggleBtn(screenGui, frame)
     ToggleBtn.MouseButton1Click:Connect(function()
         uiVisible = not uiVisible
         frame.Visible = uiVisible
-        ToggleBtn.Text = uiVisible and "❌" or "☰"
+        ToggleBtn.Text = uiVisible and "✖" or "⟳"
     end)
 end
 
 createToggleBtn(ScreenGui, Frame)
 
--- UI Size Toggle Button (top right of the UI panel, magnifier, with background)
+-- UI Size Toggle Button (top right)
 local function createSizeToggleBtn(frame)
     if frame:FindFirstChild("SizeToggleBtn") then
         frame.SizeToggleBtn:Destroy()
@@ -350,21 +375,25 @@ local function createSizeToggleBtn(frame)
         if compact then
             frame.Size = compactSize
             frame.Position = compactPos
-            ObtainCol.Size = UDim2.new(0, 70, 1, -22)
+            ObtainCol.Size = UDim2.new(0, 70, 1, -52)
             ObtainCol.Position = UDim2.new(0, 65, 0, 22)
-            UnobtainCol.Size = UDim2.new(0, 70, 1, -22)
+            UnobtainCol.Size = UDim2.new(0, 70, 1, -52)
             UnobtainCol.Position = UDim2.new(0, 135, 0, 22)
             NearbyFrame.Size = UDim2.new(0, 140, 0, 16)
-            NearbyFrame.Position = UDim2.new(0, 65, 1, -16)
+            NearbyFrame.Position = UDim2.new(0, 65, 1, -36)
+            SprinklerFrame.Size = UDim2.new(0, 140, 0, 16)
+            SprinklerFrame.Position = UDim2.new(0, 65, 1, -18)
         else
             frame.Size = normalSize
             frame.Position = normalPos
-            ObtainCol.Size = UDim2.new(0, 120, 1, -22)
+            ObtainCol.Size = UDim2.new(0, 120, 1, -52)
             ObtainCol.Position = UDim2.new(0, 65, 0, 22)
-            UnobtainCol.Size = UDim2.new(0, 120, 1, -22)
+            UnobtainCol.Size = UDim2.new(0, 120, 1, -52)
             UnobtainCol.Position = UDim2.new(0, 185, 0, 22)
             NearbyFrame.Size = UDim2.new(0, 275, 0, 24)
-            NearbyFrame.Position = UDim2.new(0, 65, 1, -24)
+            NearbyFrame.Position = UDim2.new(0, 65, 1, -52)
+            SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
+            SprinklerFrame.Position = UDim2.new(0, 65, 1, -28)
         end
     end)
 end
@@ -419,9 +448,9 @@ local function cleanup(validModels)
     end
 end
 
-local maxDistance = 25 -- Only show ESP within 40 studs
-local maxESP = 10      -- Only show ESP for 10 nearest crops
-local nearbyDistance = 15 -- Plants within 15 studs show in "Nearby" UI
+local maxDistance = 25
+local maxESP = 10
+local nearbyDistance = 15
 
 local function updateNearbyPlants()
     for _, child in ipairs(NearbyScroll:GetChildren()) do
@@ -498,9 +527,51 @@ local function update()
     updateNearbyPlants()
 end
 
+-- Infinite Sprinkler Logic
+local infiniteSprinklerEnabled = false
+
+local function sprinklerAction()
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    local range = 15
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") and cropSet[model.Name:lower()] then
+            local pp = getPP(model)
+            if pp then
+                local dist = (pp.Position - root.Position).Magnitude
+                if dist <= range then
+                    -- Replace this with your game's actual watering method
+                    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+                    local WaterEvent = ReplicatedStorage:FindFirstChild("WaterPlant")
+                    if WaterEvent and WaterEvent:IsA("RemoteEvent") then
+                        WaterEvent:FireServer(model)
+                    end
+                end
+            end
+        end
+    end
+end
+
+SprinklerToggleBtn.MouseButton1Click:Connect(function()
+    infiniteSprinklerEnabled = not infiniteSprinklerEnabled
+    SprinklerToggleBtn.Text = infiniteSprinklerEnabled and "ON" or "OFF"
+    SprinklerToggleBtn.BackgroundColor3 = infiniteSprinklerEnabled and Color3.fromRGB(80, 200, 80) or Color3.fromRGB(50, 50, 50)
+end)
+
+spawn(function()
+    while true do
+        if infiniteSprinklerEnabled then
+            sprinklerAction()
+        end
+        wait(3)
+    end
+end)
+
 spawn(function()
     while true do
         update()
-        wait(1) -- Update less often for less lag
+        wait(1)
     end
 end)
