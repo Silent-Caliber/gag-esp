@@ -1,4 +1,4 @@
--- Grow a Garden ESP: Categorized by Rarity & Obtainability
+-- Grow a Garden ESP: Categorized by Rarity & Obtainability, with Proper ESP Cleanup
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -230,8 +230,9 @@ local function createESP(model, labelText)
 end
  
 local function cleanup()
+    -- Remove ESP for models that are gone or no longer selected
     for model, gui in pairs(espMap) do
-        if not model.Parent or not getPP(model) then
+        if not model.Parent or not getPP(model) or not selectedTypes[model.Name] then
             if gui.Parent then gui.Parent:Destroy() end
             espMap[model] = nil
         end
