@@ -1,4 +1,4 @@
--- Grow a Garden ESP: Crops Only, Rarity Legend, Circular Show/Hide UI Button
+-- Grow a Garden ESP: Crops Only, Rarity Legend, Circular Toggle, Lag Fix, Nearby Plants UI
 
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -166,10 +166,38 @@ UnobtainScroll.ScrollBarThickness = 6
 local UnobtainListLayout = Instance.new("UIListLayout", UnobtainScroll)
 UnobtainListLayout.Padding = UDim.new(0, 2)
 
+-- Nearby Plants UI (bottom of main UI)
+local NearbyFrame = Instance.new("Frame", Frame)
+NearbyFrame.Size = UDim2.new(1, 0, 0, 60)
+NearbyFrame.Position = UDim2.new(0, 0, 1, -60)
+NearbyFrame.BackgroundTransparency = 0.3
+NearbyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+NearbyFrame.BorderSizePixel = 0
+
+local NearbyLabel = Instance.new("TextLabel", NearbyFrame)
+NearbyLabel.Size = UDim2.new(1, 0, 0, 18)
+NearbyLabel.Position = UDim2.new(0, 0, 0, 0)
+NearbyLabel.BackgroundTransparency = 1
+NearbyLabel.Text = "Nearby Plants"
+NearbyLabel.TextColor3 = Color3.fromRGB(255,255,255)
+NearbyLabel.Font = Enum.Font.SourceSansBold
+NearbyLabel.TextSize = 14
+
+local NearbyScroll = Instance.new("ScrollingFrame", NearbyFrame)
+NearbyScroll.Size = UDim2.new(1, 0, 1, -18)
+NearbyScroll.Position = UDim2.new(0, 0, 0, 18)
+NearbyScroll.CanvasSize = UDim2.new(0, 0, 0, 200)
+NearbyScroll.BackgroundTransparency = 1
+NearbyScroll.ScrollBarThickness = 4
+
+local NearbyListLayout = Instance.new("UIListLayout", NearbyScroll)
+NearbyListLayout.Padding = UDim.new(0, 2)
+
 -- Parent columns to main frame!
 LegendCol.Parent = Frame
 ObtainCol.Parent = Frame
 UnobtainCol.Parent = Frame
+NearbyFrame.Parent = Frame
 
 local selectedTypes = {}
 
@@ -237,7 +265,7 @@ spawn(function()
     end
 end)
 
--- Circular Show/Hide UI Button (top left, always visible)
+-- Circular Show/Hide UI Button (top left, always visible, X/☰ toggle)
 local function createToggleBtn(screenGui, frame)
     -- Remove any previous button
     if screenGui:FindFirstChild("ShowHideESPBtn") then
@@ -251,7 +279,7 @@ local function createToggleBtn(screenGui, frame)
     ToggleBtn.Position = UDim2.new(0, 6, 0, 6)
     ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
-    ToggleBtn.Text = "☰"
+    ToggleBtn.Text = "❌"
     ToggleBtn.Font = Enum.Font.SourceSansBold
     ToggleBtn.TextSize = 30
     ToggleBtn.AutoButtonColor = true
@@ -277,6 +305,7 @@ local function createToggleBtn(screenGui, frame)
     ToggleBtn.MouseButton1Click:Connect(function()
         uiVisible = not uiVisible
         frame.Visible = uiVisible
+        ToggleBtn.Text = uiVisible and "❌" or "☰"
     end)
 end
 
@@ -330,7 +359,41 @@ local function cleanup(validModels)
     end
 end
 
-local maxDistance = 80 -- Only show ESP within 80 studs
+local maxDistance = 60 -- Only show ESP within 60 studs
+local nearbyDistance = 20 -- Plants within 20 studs show in "Nearby Plants" UI
+
+-- Update nearby plants UI
+local function updateNearbyPlants()
+    for _, child in ipairs(NearbyScroll:GetChildren()) do
+        if child:IsA("TextLabel") then child:Destroy() end
+    end
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    local found = {}
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") and cropSet[model.Name:lower()] then
+            local pp = getPP(model)
+            if pp then
+                local dist = (pp.Position - root.Position).Magnitude
+                if dist <= nearbyDistance then
+                    found[#found+1] = {model=model, dist=dist}
+                end
+            end
+        end
+    end
+    table.sort(found, function(a,b) return a.dist < b.dist end)
+    for _, entry in ipairs(found) do
+        local label = Instance.new("TextLabel", NearbyScroll)
+        label.Size = UDim2.new(1, -8, 0, 18)
+        label.BackgroundTransparency = 1
+        local rarity = cropSet[entry.model.Name:lower()] and cropSet[entry.model.Name:lower()].rarity or "Common"
+        label.TextColor3 = rarityColors[rarity] or Color3.new(1,1,1)
+        label.Font = Enum.Font.SourceSansBold
+        label.TextSize = 13
+        label.Text = string.format("%s (%.1f)", entry.model.Name, entry.dist)
+    end
+end
 
 local function update()
     local validModels = {}
@@ -364,11 +427,12 @@ local function update()
         end
     end
     cleanup(validModels)
+    updateNearbyPlants()
 end
 
 spawn(function()
     while true do
         update()
-        wait(0.2)
+        wait(0.35) -- Reduced update rate for lag reduction
     end
 end)
