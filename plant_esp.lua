@@ -506,12 +506,13 @@ local function update()
             local model = nearest[i].model
             local weight, price
             for _, child in ipairs(model:GetChildren()) do
-                print("DEBUG: Model", model.Name, "Child", child.Name, "Class", child.ClassName) -- Debug all children
-                if child:IsA("NumberValue") and child.Name:lower():find("weight") then
-                    weight = child.Value
-                elseif child:IsA("NumberValue") and (child.Name:lower():find("price") or child.Name:lower():find("sell")) then
-                    price = child.Value
-                    print("DEBUG: Found price for", model.Name, price) -- Debug price found
+                if child:IsA("NumberValue") then
+                    local lowerName = child.Name:lower()
+                    if lowerName:find("weight") then
+                        weight = child.Value
+                    elseif lowerName:find("price") or lowerName:find("sellprice") then
+                        price = child.Value
+                    end
                 end
             end
             local label = model.Name
@@ -544,7 +545,6 @@ local function sprinklerAction()
             if pp then
                 local dist = (pp.Position - root.Position).Magnitude
                 if dist <= range then
-                    -- Replace this with your game's actual watering method
                     local ReplicatedStorage = game:GetService("ReplicatedStorage")
                     local WaterEvent = ReplicatedStorage:FindFirstChild("WaterPlant")
                     if WaterEvent and WaterEvent:IsA("RemoteEvent") then
@@ -562,18 +562,19 @@ SprinklerToggleBtn.MouseButton1Click:Connect(function()
     SprinklerToggleBtn.BackgroundColor3 = infiniteSprinklerEnabled and Color3.fromRGB(80, 200, 80) or Color3.fromRGB(50, 50, 50)
 end)
 
+-- Main loops
+spawn(function()
+    while true do
+        update()
+        wait(1)
+    end
+end)
+
 spawn(function()
     while true do
         if infiniteSprinklerEnabled then
             sprinklerAction()
         end
         wait(3)
-    end
-end)
-
-spawn(function()
-    while true do
-        update()
-        wait(1)
     end
 end)
