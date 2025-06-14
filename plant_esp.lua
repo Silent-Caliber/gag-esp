@@ -45,58 +45,28 @@ local rarityColors = {
 
 local CalculatePlantValue = require(game:GetService("ReplicatedStorage").Modules.CalculatePlantValue)
 
-local basePrices = {
-    carrot = 1,
-    strawberry = 5,
-    blueberry = 40,
-    ["orange tulip"] = 60,
-    tomato = 80,
-    ["chocolate carrot"] = 100,
-    corn = 130,
-    daffodil = 150,
-    watermelon = 250,
-    apple = 325,
-    pumpkin = 400,
-    bamboo = 400,
-    ["red lollipop"] = 500,
-    coconut = 600,
-    mango = 800,
-    ["candy sunflower"] = 1000,
-    ["easter egg"] = 1000,
-    cactus = 1000,
-    ["candy blossom"] = 1000,
-    ["dragon fruit"] = 1400,
-    raspberry = 1500,
-    grape = 1500,
-    mushroom = 1700,
-    pear = 2000,
-    pepper = 2000,
-    pineapple = 3000,
-    peach = 3000,
-    papaya = 5000,
-    cranberry = 5000,
-    ["cherry blossom"] = 5000,
-    durian = 6000,
-    banana = 6000,
-    lemon = 6000,
-    passionfruit = 8000,
-    eggplant = 8000,
-    lotus = 15000,
-    ["soul fruit"] = 15000,
-    ["venus fly trap"] = 20000,
-    ["cursed fruit"] = 20000,
-}
+local function getCategorizedTypes()
+    local cropsByCategory = {}
+    for obtain, rarities in pairs(cropCategories) do
+        cropsByCategory[obtain] = {}
+        for rarity, _ in pairs(rarities) do
+            cropsByCategory[obtain][rarity] = {}
+        end
+    end
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") then
+            local info = cropSet[model.Name:lower()]
+            if info then
+                cropsByCategory[info.obtain][info.rarity][model.Name] = true
+            end
+        end
+    end
+    return cropsByCategory
+end
 
-local maxDistance = 25
-local maxESP = 10
-local nearbyDistance = 15
-local infiniteSprinklerEnabled = false
-
-local selectedTypes = {}
-
--- UI sizes and positions
-local normalSize = UDim2.new(0, 340, 0, 250)
-local compactSize = UDim2.new(0, 210, 0, 160)
+-- UI Sizes (adjusted for Infinite Sprinkler row)
+local normalSize = UDim2.new(0, 340, 0, 250) -- +30 height
+local compactSize = UDim2.new(0, 210, 0, 160) -- +30 height
 local normalPos = UDim2.new(0, 10, 0, 60)
 local compactPos = UDim2.new(0, 10, 0, 20)
 
@@ -128,7 +98,6 @@ Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 14
 
--- Legend Column
 local LegendCol = Instance.new("Frame", Frame)
 LegendCol.Size = UDim2.new(0, 65, 1, -22)
 LegendCol.Position = UDim2.new(0, 0, 0, 22)
@@ -159,10 +128,16 @@ for _, rarity in ipairs(rarityOrder) do
     label.TextSize = 12
 end
 
--- Input boxes for Max Dist, Max ESP, Nearby Dist
+-- Add input boxes for maxDistance, maxESP, nearbyDistance under Prismatic label
 local inputLabels = {"Max Dist", "Max ESP", "Nearby Dist"}
 local inputVars = {"maxDistance", "maxESP", "nearbyDistance"}
+
+local maxDistance = 25
+local maxESP = 10
+local nearbyDistance = 15
+
 local inputValues = {maxDistance, maxESP, nearbyDistance}
+
 local inputBoxes = {}
 local inputLabelObjects = {}
 
@@ -212,7 +187,6 @@ for i, labelName in ipairs(inputLabels) do
     table.insert(inputLabelObjects, label)
 end
 
--- Obtainable and Unobtainable columns
 local ObtainCol = Instance.new("Frame", Frame)
 ObtainCol.Size = UDim2.new(0, 120, 1, -52)
 ObtainCol.Position = UDim2.new(0, 65, 0, 22)
@@ -265,7 +239,6 @@ UnobtainScroll.ScrollBarThickness = 4
 local UnobtainListLayout = Instance.new("UIListLayout", UnobtainScroll)
 UnobtainListLayout.Padding = UDim.new(0, 1)
 
--- Nearby plants frame
 local NearbyFrame = Instance.new("Frame", Frame)
 NearbyFrame.Size = UDim2.new(0, 275, 0, 24)
 NearbyFrame.Position = UDim2.new(0, 65, 1, -52)
@@ -292,7 +265,6 @@ NearbyScroll.ScrollBarThickness = 2
 local NearbyListLayout = Instance.new("UIListLayout", NearbyScroll)
 NearbyListLayout.Padding = UDim.new(0, 1)
 
--- Infinite Sprinkler Frame and Toggle
 local SprinklerFrame = Instance.new("Frame", Frame)
 SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
 SprinklerFrame.Position = UDim2.new(0, 65, 1, -28)
@@ -305,7 +277,7 @@ SprinklerLabel.Size = UDim2.new(0.6, 0, 1, 0)
 SprinklerLabel.Position = UDim2.new(0, 4, 0, 0)
 SprinklerLabel.BackgroundTransparency = 1
 SprinklerLabel.Text = "Infinite Sprinkler"
-SprinklerLabel.TextColor3 = Color3.new(1, 1, 1)
+SprinklerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 SprinklerLabel.Font = Enum.Font.SourceSansBold
 SprinklerLabel.TextSize = 12
 SprinklerLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -323,147 +295,13 @@ SprinklerToggleBtn.BorderSizePixel = 0
 local corner = Instance.new("UICorner", SprinklerToggleBtn)
 corner.CornerRadius = UDim.new(0, 6)
 
-SprinklerToggleBtn.MouseButton1Click:Connect(function()
-    infiniteSprinklerEnabled = not infiniteSprinklerEnabled
-    SprinklerToggleBtn.Text = infiniteSprinklerEnabled and "ON" or "OFF"
-    SprinklerToggleBtn.BackgroundColor3 = infiniteSprinklerEnabled and Color3.fromRGB(80, 200, 80) or Color3.fromRGB(50, 50, 50)
-end)
+LegendCol.Parent = Frame
+ObtainCol.Parent = Frame
+UnobtainCol.Parent = Frame
+NearbyFrame.Parent = Frame
+SprinklerFrame.Parent = Frame
 
--- Functions
-
-local function getPP(model)
-    if model.PrimaryPart then return model.PrimaryPart end
-    for _,c in ipairs(model:GetChildren()) do
-        if c:IsA("BasePart") then
-            model.PrimaryPart = c
-            return c
-        end
-    end
-    return nil
-end
-
-local function createESP(model, labelText)
-    if espMap[model] then
-        espMap[model].Text = labelText
-        return espMap[model]
-    end
-    local pp = getPP(model)
-    if not pp then return end
-    local bg = Instance.new("BillboardGui", model)
-    bg.Name = "PlantESP"
-    bg.Adornee = pp
-    bg.Size = UDim2.new(0, 120, 0, 36)
-    bg.StudsOffset = Vector3.new(0, 4, 0)
-    bg.AlwaysOnTop = true
-    local tl = Instance.new("TextLabel", bg)
-    tl.Size = UDim2.new(1, 0, 1, 0)
-    tl.BackgroundTransparency = 1
-    tl.TextColor3 = Color3.new(1, 1, 1)
-    tl.TextStrokeColor3 = Color3.new(0, 0, 0)
-    tl.TextStrokeTransparency = 0.2
-    tl.Font = Enum.Font.SourceSansBold
-    tl.TextSize = 12
-    tl.TextWrapped = true
-    tl.RichText = true
-    tl.Text = labelText
-    espMap[model] = tl
-    return tl
-end
-
-local function cleanup(validModels)
-    for model, gui in pairs(espMap) do
-        if not validModels[model] then
-            if gui.Parent then gui.Parent:Destroy() end
-            espMap[model] = nil
-        end
-    end
-end
-
-local function getExactPrice(model)
-    local nameKey = model.Name:lower()
-    
-    local price
-    if CalculatePlantValue then
-        if typeof(CalculatePlantValue) == "table" and CalculatePlantValue.Calculate then
-            price = CalculatePlantValue.Calculate(model)
-        elseif typeof(CalculatePlantValue) == "function" then
-            price = CalculatePlantValue(model)
-        end
-    end
-
-    if (not price or price == 0) and model:FindFirstChild("Price") and model.Price:IsA("NumberValue") then
-        price = model.Price.Value
-    end
-
-    if not price or price == 0 then
-        local basePrice = basePrices[nameKey] or 10
-        local weight = 1
-        for _, child in ipairs(model:GetChildren()) do
-            if child:IsA("NumberValue") and child.Name:lower():find("weight") then
-                weight = child.Value
-                break
-            end
-        end
-        price = math.floor(basePrice * weight)
-    end
-
-    return price
-end
-
-local function sprinklerAction()
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-
-    local range = 15
-    for _, model in ipairs(workspace:GetDescendants()) do
-        if model:IsA("Model") and cropSet[model.Name:lower()] then
-            local pp = getPP(model)
-            if pp then
-                local dist = (pp.Position - root.Position).Magnitude
-                if dist <= range then
-                    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                    local WaterEvent = ReplicatedStorage:FindFirstChild("WaterPlant")
-                    if WaterEvent and WaterEvent:IsA("RemoteEvent") then
-                        WaterEvent:FireServer(model)
-                    end
-                end
-            end
-        end
-    end
-end
-
-local function updateNearbyPlants()
-    for _, child in ipairs(NearbyScroll:GetChildren()) do
-        if child:IsA("TextLabel") then child:Destroy() end
-    end
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-    local found = {}
-    for _, model in ipairs(workspace:GetDescendants()) do
-        if model:IsA("Model") and cropSet[model.Name:lower()] then
-            local pp = getPP(model)
-            if pp then
-                local dist = (pp.Position - root.Position).Magnitude
-                if dist <= nearbyDistance then
-                    found[#found+1] = {model=model, dist=dist}
-                end
-            end
-        end
-    end
-    table.sort(found, function(a,b) return a.dist < b.dist end)
-    for _, entry in ipairs(found) do
-        local label = Instance.new("TextLabel", NearbyScroll)
-        label.Size = UDim2.new(1, -4, 0, 14)
-        label.BackgroundTransparency = 1
-        local rarity = cropSet[entry.model.Name:lower()] and cropSet[entry.model.Name:lower()].rarity or "Common"
-        label.TextColor3 = rarityColors[rarity] or Color3.new(1,1,1)
-        label.Font = Enum.Font.SourceSansBold
-        label.TextSize = 10
-        label.Text = string.format("%s (%.1f)", entry.model.Name, entry.dist)
-    end
-end
+local selectedTypes = {}
 
 local function createToggles()
     for _, child in ipairs(ObtainScroll:GetChildren()) do
@@ -524,7 +362,7 @@ spawn(function()
     end
 end)
 
--- UI toggle button (top left)
+-- Toggle UI Button (top left)
 local function createToggleBtn(screenGui, frame)
     if screenGui:FindFirstChild("ShowHideESPBtn") then
         screenGui.ShowHideESPBtn:Destroy()
@@ -568,17 +406,7 @@ end
 
 local ToggleBtn = createToggleBtn(ScreenGui, Frame)
 
--- UI size toggle button (top right)
-local normalSize = UDim2.new(0, 340, 0, 250)
-local compactSize = UDim2.new(0, 210, 0, 160)
-local normalPos = UDim2.new(0, 10, 0, 60)
-local compactPos = UDim2.new(0, 10, 0, 20)
-
-local ObtainCol = Frame:FindFirstChildOfClass("Frame") -- Assuming you keep references
-local UnobtainCol = Frame:FindFirstChildOfClass("Frame")
-local NearbyFrame = Frame:FindFirstChildOfClass("Frame")
-local SprinklerFrame = Frame:FindFirstChildOfClass("Frame")
-
+-- UI Size Toggle Button (top right)
 local function createSizeToggleBtn(frame)
     if frame:FindFirstChild("SizeToggleBtn") then
         frame.SizeToggleBtn:Destroy()
@@ -604,7 +432,71 @@ local function createSizeToggleBtn(frame)
     local compact = false
 
     local function updateTextSizes(compact)
-        -- Update text sizes of labels and buttons here if needed
+        if compact then
+            Title.TextSize = 10
+            LegendLabel.TextSize = 9
+            for _, child in ipairs(LegendCol:GetChildren()) do
+                if child:IsA("TextLabel") and child ~= LegendLabel then
+                    child.TextSize = 9
+                end
+            end
+            for i, label in ipairs(inputLabelObjects) do
+                label.TextSize = 9
+            end
+            for i, box in ipairs(inputBoxes) do
+                box.TextSize = 10
+            end
+            ObtainLabel.TextSize = 9
+            UnobtainLabel.TextSize = 9
+            NearbyLabel.TextSize = 8
+            SprinklerLabel.TextSize = 9
+            SprinklerToggleBtn.TextSize = 10
+            ToggleBtn.TextSize = 16
+            btn.TextSize = 14
+
+            for _, b in ipairs(ObtainScroll:GetChildren()) do
+                if b:IsA("TextButton") then
+                    b.TextSize = 8
+                end
+            end
+            for _, b in ipairs(UnobtainScroll:GetChildren()) do
+                if b:IsA("TextButton") then
+                    b.TextSize = 8
+                end
+            end
+        else
+            Title.TextSize = 14
+            LegendLabel.TextSize = 12
+            for _, child in ipairs(LegendCol:GetChildren()) do
+                if child:IsA("TextLabel") and child ~= LegendLabel then
+                    child.TextSize = 12
+                end
+            end
+            for i, label in ipairs(inputLabelObjects) do
+                label.TextSize = 12
+            end
+            for i, box in ipairs(inputBoxes) do
+                box.TextSize = 14
+            end
+            ObtainLabel.TextSize = 12
+            UnobtainLabel.TextSize = 12
+            NearbyLabel.TextSize = 11
+            SprinklerLabel.TextSize = 12
+            SprinklerToggleBtn.TextSize = 14
+            ToggleBtn.TextSize = 22
+            btn.TextSize = 18
+
+            for _, b in ipairs(ObtainScroll:GetChildren()) do
+                if b:IsA("TextButton") then
+                    b.TextSize = 10
+                end
+            end
+            for _, b in ipairs(UnobtainScroll:GetChildren()) do
+                if b:IsA("TextButton") then
+                    b.TextSize = 10
+                end
+            end
+        end
     end
 
     btn.MouseButton1Click:Connect(function()
@@ -642,12 +534,181 @@ end
 
 local SizeToggleBtn = createSizeToggleBtn(Frame)
 
--- Main update loop
+local function getPP(model)
+    if model.PrimaryPart then return model.PrimaryPart end
+    for _,c in ipairs(model:GetChildren()) do
+        if c:IsA("BasePart") then
+            model.PrimaryPart = c
+            return c
+        end
+    end
+    return nil
+end
+
+local function createESP(model, labelText)
+    if espMap[model] then
+        espMap[model].Text = labelText
+        return espMap[model]
+    end
+    local pp = getPP(model)
+    if not pp then return end
+    local bg = Instance.new("BillboardGui", model)
+    bg.Name = "PlantESP"
+    bg.Adornee = pp
+    bg.Size = UDim2.new(0, 120, 0, 36)
+    bg.StudsOffset = Vector3.new(0, 4, 0)
+    bg.AlwaysOnTop = true
+    local tl = Instance.new("TextLabel", bg)
+    tl.Size = UDim2.new(1, 0, 1, 0)
+    tl.BackgroundTransparency = 1
+    tl.TextColor3 = Color3.new(1, 1, 1)
+    tl.TextStrokeColor3 = Color3.new(0, 0, 0)
+    tl.TextStrokeTransparency = 0.2
+    tl.Font = Enum.Font.SourceSansBold
+    tl.TextSize = 12
+    tl.TextWrapped = true
+    tl.RichText = true
+    tl.Text = labelText
+    espMap[model] = tl
+    return tl
+end
+
+local function cleanup(validModels)
+    for model, gui in pairs(espMap) do
+        if not validModels[model] then
+            if gui.Parent then gui.Parent:Destroy() end
+            espMap[model] = nil
+        end
+    end
+end
+
+local function updateNearbyPlants()
+    for _, child in ipairs(NearbyScroll:GetChildren()) do
+        if child:IsA("TextLabel") then child:Destroy() end
+    end
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    local found = {}
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") and cropSet[model.Name:lower()] then
+            local pp = getPP(model)
+            if pp then
+                local dist = (pp.Position - root.Position).Magnitude
+                if dist <= nearbyDistance then
+                    found[#found+1] = {model=model, dist=dist}
+                end
+            end
+        end
+    end
+    table.sort(found, function(a,b) return a.dist < b.dist end)
+    for _, entry in ipairs(found) do
+        local label = Instance.new("TextLabel", NearbyScroll)
+        label.Size = UDim2.new(1, -4, 0, 14)
+        label.BackgroundTransparency = 1
+        local rarity = cropSet[entry.model.Name:lower()] and cropSet[entry.model.Name:lower()].rarity or "Common"
+        label.TextColor3 = rarityColors[rarity] or Color3.new(1,1,1)
+        label.Font = Enum.Font.SourceSansBold
+        label.TextSize = 10
+        label.Text = string.format("%s (%.1f)", entry.model.Name, entry.dist)
+    end
+end
+
+local function update()
+    local validModels = {}
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    local nearest = {}
+    if root then
+        for _, model in ipairs(workspace:GetDescendants()) do
+            if model:IsA("Model") and selectedTypes[model.Name] then
+                local pp = getPP(model)
+                if pp then
+                    local dist = (pp.Position - root.Position).Magnitude
+                    if dist <= maxDistance then
+                        table.insert(nearest, {model=model, dist=dist})
+                    end
+                end
+            end
+        end
+        table.sort(nearest, function(a, b) return a.dist < b.dist end)
+        for i = 1, math.min(#nearest, maxESP) do
+            local model = nearest[i].model
+            local weight
+            for _, child in ipairs(model:GetChildren()) do
+                if child:IsA("NumberValue") and child.Name:lower():find("weight") then
+                    weight = child.Value
+                    break
+                end
+            end
+            local price
+            if CalculatePlantValue and typeof(CalculatePlantValue) == "table" and CalculatePlantValue.Calculate then
+                price = CalculatePlantValue.Calculate(model)
+            elseif CalculatePlantValue and typeof(CalculatePlantValue) == "function" then
+                price = CalculatePlantValue(model)
+            end
+
+            local label = model.Name
+            if weight then
+                label = label .. "\nWt.: " .. tostring(weight)
+            end
+            if price then
+                label = label .. string.format('\n<font color="rgb(80,255,80)">Price: %s</font>', tostring(price))
+            end
+
+            local espLabel = createESP(model, label)
+            if espLabel then
+                espLabel.RichText = true
+            end
+            validModels[model] = true
+        end
+    end
+    cleanup(validModels)
+    updateNearbyPlants()
+end
+
+local infiniteSprinklerEnabled = false
+
+local function sprinklerAction()
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    local range = 15
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") and cropSet[model.Name:lower()] then
+            local pp = getPP(model)
+            if pp then
+                local dist = (pp.Position - root.Position).Magnitude
+                if dist <= range then
+                    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+                    local WaterEvent = ReplicatedStorage:FindFirstChild("WaterPlant")
+                    if WaterEvent and WaterEvent:IsA("RemoteEvent") then
+                        WaterEvent:FireServer(model)
+                    end
+                end
+            end
+        end
+    end
+end
+
+SprinklerToggleBtn.MouseButton1Click:Connect(function()
+    infiniteSprinklerEnabled = not infiniteSprinklerEnabled
+    SprinklerToggleBtn.Text = infiniteSprinklerEnabled and "ON" or "OFF"
+    SprinklerToggleBtn.BackgroundColor3 = infiniteSprinklerEnabled and Color3.fromRGB(80, 200, 80) or Color3.fromRGB(50, 50, 50)
+end)
+
 spawn(function()
     while true do
         if infiniteSprinklerEnabled then
             sprinklerAction()
         end
+        wait(3)
+    end
+end)
+
+spawn(function()
+    while true do
         update()
         wait(1)
     end
