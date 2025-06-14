@@ -62,9 +62,9 @@ local function getCategorizedTypes()
     return cropsByCategory
 end
 
--- UI Sizes
-local normalSize = UDim2.new(0, 340, 0, 250)
-local compactSize = UDim2.new(0, 210, 0, 160)
+-- UI Sizes (adjusted for Infinite Sprinkler row)
+local normalSize = UDim2.new(0, 340, 0, 250) -- +30 height
+local compactSize = UDim2.new(0, 210, 0, 160) -- +30 height
 local normalPos = UDim2.new(0, 10, 0, 60)
 local compactPos = UDim2.new(0, 10, 0, 20)
 
@@ -204,6 +204,7 @@ NearbyScroll.ScrollBarThickness = 2
 local NearbyListLayout = Instance.new("UIListLayout", NearbyScroll)
 NearbyListLayout.Padding = UDim.new(0, 1)
 
+-- Infinite Sprinkler UI Row (below NearbyFrame)
 local SprinklerFrame = Instance.new("Frame", Frame)
 SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
 SprinklerFrame.Position = UDim2.new(0, 65, 1, -28)
@@ -412,19 +413,12 @@ local function getPP(model)
 end
 
 local function createESP(model, labelText)
-    if not model or typeof(model) ~= "Instance" then
-        print("Invalid model:", model)
-        return
-    end
     if espMap[model] then
         espMap[model].Text = labelText
         return espMap[model]
     end
     local pp = getPP(model)
-    if not pp then
-        print("No primary part for model", model.Name)
-        return
-    end
+    if not pp then return end
     local bg = Instance.new("BillboardGui", model)
     bg.Name = "PlantESP"
     bg.Adornee = pp
@@ -551,10 +545,8 @@ local function sprinklerAction()
                     -- Replace this with your game's actual watering method
                     local ReplicatedStorage = game:GetService("ReplicatedStorage")
                     local WaterEvent = ReplicatedStorage:FindFirstChild("WaterPlant")
-                    if WaterEvent and typeof(WaterEvent.FireServer) == "function" then
+                    if WaterEvent and WaterEvent:IsA("RemoteEvent") then
                         WaterEvent:FireServer(model)
-                    else
-                        print("WaterEvent is missing or FireServer is not a function!")
                     end
                 end
             end
