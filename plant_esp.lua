@@ -138,6 +138,7 @@ local nearbyDistance = 15
 local inputValues = {maxDistance, maxESP, nearbyDistance} -- initial values
 
 local inputBoxes = {}
+local inputLabelObjects = {}
 
 for i, labelName in ipairs(inputLabels) do
     local yPos = (#rarityOrder * 16) + (i - 1) * 24 + 4 -- position below Prismatic label with spacing
@@ -183,6 +184,7 @@ for i, labelName in ipairs(inputLabels) do
     end)
 
     table.insert(inputBoxes, box)
+    table.insert(inputLabelObjects, label)
 end
 
 local ObtainCol = Instance.new("Frame", Frame)
@@ -400,9 +402,10 @@ local function createToggleBtn(screenGui, frame)
         frame.Visible = uiVisible
         ToggleBtn.Text = uiVisible and "✖" or "⟳"
     end)
+    return ToggleBtn
 end
 
-createToggleBtn(ScreenGui, Frame)
+local ToggleBtn = createToggleBtn(ScreenGui, Frame)
 
 -- UI Size Toggle Button (top right)
 local function createSizeToggleBtn(frame)
@@ -429,6 +432,74 @@ local function createSizeToggleBtn(frame)
 
     local compact = false
 
+    local function updateTextSizes(compact)
+        if compact then
+            Title.TextSize = 10
+            LegendLabel.TextSize = 9
+            for _, child in ipairs(LegendCol:GetChildren()) do
+                if child:IsA("TextLabel") and child ~= LegendLabel then
+                    child.TextSize = 9
+                end
+            end
+            for i, label in ipairs(inputLabelObjects) do
+                label.TextSize = 9
+            end
+            for i, box in ipairs(inputBoxes) do
+                box.TextSize = 10
+            end
+            ObtainLabel.TextSize = 9
+            UnobtainLabel.TextSize = 9
+            NearbyLabel.TextSize = 8
+            SprinklerLabel.TextSize = 9
+            SprinklerToggleBtn.TextSize = 10
+            ToggleBtn.TextSize = 16
+            btn.TextSize = 14
+
+            for _, b in ipairs(ObtainScroll:GetChildren()) do
+                if b:IsA("TextButton") then
+                    b.TextSize = 8
+                end
+            end
+            for _, b in ipairs(UnobtainScroll:GetChildren()) do
+                if b:IsA("TextButton") then
+                    b.TextSize = 8
+                end
+            end
+        else
+            Title.TextSize = 14
+            LegendLabel.TextSize = 12
+            for _, child in ipairs(LegendCol:GetChildren()) do
+                if child:IsA("TextLabel") and child ~= LegendLabel then
+                    child.TextSize = 12
+                end
+            end
+            for i, label in ipairs(inputLabelObjects) do
+                label.TextSize = 12
+            end
+            for i, box in ipairs(inputBoxes) do
+                box.TextSize = 14
+            end
+            ObtainLabel.TextSize = 12
+            UnobtainLabel.TextSize = 12
+            NearbyLabel.TextSize = 11
+            SprinklerLabel.TextSize = 12
+            SprinklerToggleBtn.TextSize = 14
+            ToggleBtn.TextSize = 22
+            btn.TextSize = 18
+
+            for _, b in ipairs(ObtainScroll:GetChildren()) do
+                if b:IsA("TextButton") then
+                    b.TextSize = 10
+                end
+            end
+            for _, b in ipairs(UnobtainScroll:GetChildren()) do
+                if b:IsA("TextButton") then
+                    b.TextSize = 10
+                end
+            end
+        end
+    end
+
     btn.MouseButton1Click:Connect(function()
         compact = not compact
         if compact then
@@ -454,10 +525,16 @@ local function createSizeToggleBtn(frame)
             SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
             SprinklerFrame.Position = UDim2.new(0, 65, 1, -28)
         end
+        updateTextSizes(compact)
     end)
+
+    -- Initialize text sizes to normal
+    updateTextSizes(false)
+
+    return btn
 end
 
-createSizeToggleBtn(Frame)
+local SizeToggleBtn = createSizeToggleBtn(Frame)
 
 -- ESP Core
 local function getPP(model)
