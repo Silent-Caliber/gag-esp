@@ -14,7 +14,7 @@ local cropCategories = {
         Prismatic = {"Beanstalk", "Ember Lily"},
     },
     Unobtainable = {
-        Common = {"Chocolate crops"},
+        Common = {"Chocolate Carrot"},
         Uncommon = {"Red Lollipop", "Nightshade"},
         Rare = {"Candy Sunflower", "Mint", "Glowshroom", "Pear"},
         Legendary = {"Cranberry", "Durian", "Easter Egg", "Papaya"},
