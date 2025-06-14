@@ -1,10 +1,3 @@
-local function formatNumber(n)
-    local str = string.format("%.3f", n)
-    local before, after = str:match("^(.-)%.(%d+)$")
-    before = before:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
-    return before .. "." .. after
-end
-
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -21,7 +14,7 @@ local cropCategories = {
         Prismatic = {"Beanstalk", "Ember Lily"},
     },
     Unobtainable = {
-        Common = {"Chocolate Carrot"},
+        Common = {"Chocolate crops"},
         Uncommon = {"Red Lollipop", "Nightshade"},
         Rare = {"Candy Sunflower", "Mint", "Glowshroom", "Pear"},
         Legendary = {"Cranberry", "Durian", "Easter Egg", "Papaya"},
@@ -70,8 +63,8 @@ local function getCategorizedTypes()
 end
 
 -- UI Sizes (adjusted for Infinite Sprinkler row)
-local normalSize = UDim2.new(0, 340, 0, 250)
-local compactSize = UDim2.new(0, 210, 0, 160)
+local normalSize = UDim2.new(0, 340, 0, 290) -- increased height for new UI
+local compactSize = UDim2.new(0, 210, 0, 200) -- increased height for new UI
 local normalPos = UDim2.new(0, 10, 0, 60)
 local compactPos = UDim2.new(0, 10, 0, 20)
 
@@ -186,15 +179,15 @@ local UnobtainListLayout = Instance.new("UIListLayout", UnobtainScroll)
 UnobtainListLayout.Padding = UDim.new(0, 1)
 
 local NearbyFrame = Instance.new("Frame", Frame)
-NearbyFrame.Size = UDim2.new(0, 275, 0, 24)
-NearbyFrame.Position = UDim2.new(0, 65, 1, -52)
+NearbyFrame.Size = UDim2.new(0, 275, 0, 40) -- Increased height for input boxes
+NearbyFrame.Position = UDim2.new(0, 65, 1, -110) -- Adjusted position for extra height
 NearbyFrame.BackgroundTransparency = 0.3
 NearbyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 NearbyFrame.BorderSizePixel = 0
 
 local NearbyLabel = Instance.new("TextLabel", NearbyFrame)
-NearbyLabel.Size = UDim2.new(1, 0, 0, 12)
-NearbyLabel.Position = UDim2.new(0, 0, 0, 0)
+NearbyLabel.Size = UDim2.new(0.3, 0, 0, 12)
+NearbyLabel.Position = UDim2.new(0, 4, 0, 0)
 NearbyLabel.BackgroundTransparency = 1
 NearbyLabel.Text = "Nearby"
 NearbyLabel.TextColor3 = Color3.fromRGB(255,255,255)
@@ -202,14 +195,106 @@ NearbyLabel.Font = Enum.Font.SourceSansBold
 NearbyLabel.TextSize = 11
 
 local NearbyScroll = Instance.new("ScrollingFrame", NearbyFrame)
-NearbyScroll.Size = UDim2.new(1, 0, 1, -12)
-NearbyScroll.Position = UDim2.new(0, 0, 0, 12)
+NearbyScroll.Size = UDim2.new(1, 0, 1, -24)
+NearbyScroll.Position = UDim2.new(0, 0, 0, 24)
 NearbyScroll.CanvasSize = UDim2.new(0, 0, 0, 100)
 NearbyScroll.BackgroundTransparency = 1
 NearbyScroll.ScrollBarThickness = 2
 
 local NearbyListLayout = Instance.new("UIListLayout", NearbyScroll)
 NearbyListLayout.Padding = UDim.new(0, 1)
+
+-- Input: Max Nearby Plants
+local maxNearbyPlants = 10
+local maxPlantsBox = Instance.new("TextBox", NearbyFrame)
+maxPlantsBox.Size = UDim2.new(0, 50, 0, 16)
+maxPlantsBox.Position = UDim2.new(0.35, 0, 0, 0)
+maxPlantsBox.Text = tostring(maxNearbyPlants)
+maxPlantsBox.ClearTextOnFocus = false
+maxPlantsBox.PlaceholderText = "Max Plants"
+maxPlantsBox.Font = Enum.Font.SourceSans
+maxPlantsBox.TextSize = 12
+maxPlantsBox.TextColor3 = Color3.new(1,1,1)
+maxPlantsBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+maxPlantsBox.BorderSizePixel = 0
+
+-- Input: Max Nearby Distance
+local maxNearbyDistance = 15
+local maxDistanceBox = Instance.new("TextBox", NearbyFrame)
+maxDistanceBox.Size = UDim2.new(0, 50, 0, 16)
+maxDistanceBox.Position = UDim2.new(0.6, 0, 0, 0)
+maxDistanceBox.Text = tostring(maxNearbyDistance)
+maxDistanceBox.ClearTextOnFocus = false
+maxDistanceBox.PlaceholderText = "Max Dist"
+maxDistanceBox.Font = Enum.Font.SourceSans
+maxDistanceBox.TextSize = 12
+maxDistanceBox.TextColor3 = Color3.new(1,1,1)
+maxDistanceBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+maxDistanceBox.BorderSizePixel = 0
+
+-- Input validation and update on focus lost
+maxPlantsBox.FocusLost:Connect(function()
+    local val = tonumber(maxPlantsBox.Text)
+    if val and val > 0 then
+        maxNearbyPlants = math.floor(val)
+    else
+        maxPlantsBox.Text = tostring(maxNearbyPlants)
+    end
+end)
+
+maxDistanceBox.FocusLost:Connect(function()
+    local val = tonumber(maxDistanceBox.Text)
+    if val and val > 0 then
+        maxNearbyDistance = val
+    else
+        maxDistanceBox.Text = tostring(maxNearbyDistance)
+    end
+end)
+
+-- Max ESP Plants input UI (for main ESP list)
+local maxESP = 10
+
+local ESPControlFrame = Instance.new("Frame", Frame)
+ESPControlFrame.Size = UDim2.new(0, 120, 0, 40)
+ESPControlFrame.Position = UDim2.new(0, 185, 1, -70)  -- Adjust as needed
+ESPControlFrame.BackgroundTransparency = 0.3
+ESPControlFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+ESPControlFrame.BorderSizePixel = 0
+
+local ESPLabel = Instance.new("TextLabel", ESPControlFrame)
+ESPLabel.Size = UDim2.new(0.6, 0, 0, 16)
+ESPLabel.Position = UDim2.new(0, 4, 0, 0)
+ESPLabel.BackgroundTransparency = 1
+ESPLabel.Text = "Max ESP Plants"
+ESPLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+ESPLabel.Font = Enum.Font.SourceSansBold
+ESPLabel.TextSize = 12
+ESPLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local ESPInputBox = Instance.new("TextBox", ESPControlFrame)
+ESPInputBox.Size = UDim2.new(0, 50, 0, 16)
+ESPInputBox.Position = UDim2.new(0.6, 0, 0, 0)
+ESPInputBox.Text = tostring(maxESP)
+ESPInputBox.ClearTextOnFocus = false
+ESPInputBox.PlaceholderText = "Number"
+ESPInputBox.Font = Enum.Font.SourceSans
+ESPInputBox.TextSize = 12
+ESPInputBox.TextColor3 = Color3.new(1,1,1)
+ESPInputBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+ESPInputBox.BorderSizePixel = 0
+
+ESPInputBox:GetPropertyChangedSignal("Text"):Connect(function()
+    ESPInputBox.Text = string.gsub(ESPInputBox.Text, "%D", "")
+end)
+
+ESPInputBox.FocusLost:Connect(function()
+    local val = tonumber(ESPInputBox.Text)
+    if val and val > 0 then
+        maxESP = math.floor(val)
+    else
+        ESPInputBox.Text = tostring(maxESP)
+    end
+end)
 
 -- Infinite Sprinkler UI Row (below NearbyFrame)
 local SprinklerFrame = Instance.new("Frame", Frame)
@@ -246,6 +331,7 @@ LegendCol.Parent = Frame
 ObtainCol.Parent = Frame
 UnobtainCol.Parent = Frame
 NearbyFrame.Parent = Frame
+ESPControlFrame.Parent = Frame
 SprinklerFrame.Parent = Frame
 
 local selectedTypes = {}
@@ -386,10 +472,12 @@ local function createSizeToggleBtn(frame)
             ObtainCol.Position = UDim2.new(0, 65, 0, 22)
             UnobtainCol.Size = UDim2.new(0, 70, 1, -52)
             UnobtainCol.Position = UDim2.new(0, 135, 0, 22)
-            NearbyFrame.Size = UDim2.new(0, 140, 0, 16)
-            NearbyFrame.Position = UDim2.new(0, 65, 1, -36)
+            NearbyFrame.Size = UDim2.new(0, 140, 0, 40)
+            NearbyFrame.Position = UDim2.new(0, 65, 1, -110)
+            ESPControlFrame.Size = UDim2.new(0, 140, 0, 40)
+            ESPControlFrame.Position = UDim2.new(0, 185, 1, -70)
             SprinklerFrame.Size = UDim2.new(0, 140, 0, 16)
-            SprinklerFrame.Position = UDim2.new(0, 65, 1, -18)
+            SprinklerFrame.Position = UDim2.new(0, 65, 1, -28)
         else
             frame.Size = normalSize
             frame.Position = normalPos
@@ -397,8 +485,10 @@ local function createSizeToggleBtn(frame)
             ObtainCol.Position = UDim2.new(0, 65, 0, 22)
             UnobtainCol.Size = UDim2.new(0, 120, 1, -52)
             UnobtainCol.Position = UDim2.new(0, 185, 0, 22)
-            NearbyFrame.Size = UDim2.new(0, 275, 0, 24)
-            NearbyFrame.Position = UDim2.new(0, 65, 1, -52)
+            NearbyFrame.Size = UDim2.new(0, 275, 0, 40)
+            NearbyFrame.Position = UDim2.new(0, 65, 1, -110)
+            ESPControlFrame.Size = UDim2.new(0, 120, 0, 40)
+            ESPControlFrame.Position = UDim2.new(0, 185, 1, -70)
             SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
             SprinklerFrame.Position = UDim2.new(0, 65, 1, -28)
         end
@@ -419,70 +509,29 @@ local function getPP(model)
     return nil
 end
 
-local function formatNumber(n)
-    local str = string.format("%.3f", n)
-    local before, after = str:match("^(.-)%.(%d+)$")
-    before = before:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
-    return before .. "." .. after
-end
-
-local function createESP(model, labelText, price)
+local function createESP(model, labelText)
+    if espMap[model] then
+        espMap[model].Text = labelText
+        return espMap[model]
+    end
     local pp = getPP(model)
     if not pp then return end
-
-    -- Only ONE BillboardGui per plant
-    local bg = model:FindFirstChild("PlantESP")
-    if not bg then
-        bg = Instance.new("BillboardGui")
-        bg.Name = "PlantESP"
-        bg.Adornee = pp
-        bg.Size = UDim2.new(0, 140, 0, 38)
-        bg.StudsOffset = Vector3.new(0, 4, 0)
-        bg.AlwaysOnTop = true
-        bg.Parent = model
-    end
-
-    -- Main label (name/weight)
-    local tl = bg:FindFirstChild("MainLabel")
-    if not tl then
-        tl = Instance.new("TextLabel")
-        tl.Name = "MainLabel"
-        tl.Size = UDim2.new(1, 0, 0, 18)
-        tl.Position = UDim2.new(0, 0, 0, 0)
-        tl.BackgroundTransparency = 1
-        tl.TextColor3 = Color3.new(1, 1, 1)
-        tl.TextStrokeColor3 = Color3.new(0, 0, 0)
-        tl.TextStrokeTransparency = 0.2
-        tl.Font = Enum.Font.SourceSansBold
-        tl.TextSize = 12
-        tl.TextWrapped = true
-        tl.RichText = true
-        tl.Parent = bg
-    end
+    local bg = Instance.new("BillboardGui", model)
+    bg.Name = "PlantESP"
+    bg.Adornee = pp
+    bg.Size = UDim2.new(0, 120, 0, 36)
+    bg.StudsOffset = Vector3.new(0, 4, 0)
+    bg.AlwaysOnTop = true
+    local tl = Instance.new("TextLabel", bg)
+    tl.Size = UDim2.new(1, 0, 1, 0)
+    tl.BackgroundTransparency = 1
+    tl.TextColor3 = Color3.new(1, 1, 1)
+    tl.TextStrokeColor3 = Color3.new(0, 0, 0)
+    tl.TextStrokeTransparency = 0.2
+    tl.Font = Enum.Font.SourceSansBold
+    tl.TextSize = 12
+    tl.TextWrapped = true
     tl.Text = labelText
-
-    -- Price label (green, below)
-    local priceLabel = bg:FindFirstChild("PriceESP")
-    if not priceLabel then
-        priceLabel = Instance.new("TextLabel")
-        priceLabel.Name = "PriceESP"
-        priceLabel.Size = UDim2.new(1, 0, 0, 16)
-        priceLabel.Position = UDim2.new(0, 0, 0, 18)
-        priceLabel.BackgroundTransparency = 1
-        priceLabel.TextColor3 = Color3.fromRGB(80,255,80)
-        priceLabel.TextStrokeTransparency = 0.2
-        priceLabel.Font = Enum.Font.SourceSansBold
-        priceLabel.TextSize = 12
-        priceLabel.TextWrapped = true
-        priceLabel.RichText = true
-        priceLabel.Parent = bg
-    end
-    if price then
-        priceLabel.Text = "<font color='rgb(80,255,80)'>" .. formatNumber(price) .. "₵</font>"
-    else
-        priceLabel.Text = ""
-    end
-
     espMap[model] = tl
     return tl
 end
@@ -490,15 +539,13 @@ end
 local function cleanup(validModels)
     for model, gui in pairs(espMap) do
         if not validModels[model] then
-            if gui.Parent and gui.Parent.Parent then gui.Parent:Destroy() end
+            if gui.Parent then gui.Parent:Destroy() end
             espMap[model] = nil
         end
     end
 end
 
 local maxDistance = 25
-local maxESP = 10
-local nearbyDistance = 15
 
 local function updateNearbyPlants()
     for _, child in ipairs(NearbyScroll:GetChildren()) do
@@ -513,14 +560,15 @@ local function updateNearbyPlants()
             local pp = getPP(model)
             if pp then
                 local dist = (pp.Position - root.Position).Magnitude
-                if dist <= nearbyDistance then
+                if dist <= maxNearbyDistance then
                     found[#found+1] = {model=model, dist=dist}
                 end
             end
         end
     end
     table.sort(found, function(a,b) return a.dist < b.dist end)
-    for _, entry in ipairs(found) do
+    for i = 1, math.min(#found, maxNearbyPlants) do
+        local entry = found[i]
         local label = Instance.new("TextLabel", NearbyScroll)
         label.Size = UDim2.new(1, -4, 0, 14)
         label.BackgroundTransparency = 1
@@ -564,7 +612,10 @@ local function update()
             if weight then
                 label = label .. "\nWt.: " .. tostring(weight)
             end
-            createESP(model, label, price)
+            if price then
+                label = label .. "\nPrice: " .. tostring(price)
+            end
+            createESP(model, label)
             validModels[model] = true
         end
     end
