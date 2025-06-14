@@ -1,3 +1,10 @@
+local function formatNumber(n)
+    local str = string.format("%.3f", n)
+    local before, after = str:match("^(.-)%.(%d+)$")
+    before = before:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
+    return before .. "." .. after
+end
+
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -14,7 +21,7 @@ local cropCategories = {
         Prismatic = {"Beanstalk", "Ember Lily"},
     },
     Unobtainable = {
-        Common = {"Chocolate crops"},
+        Common = {"Chocolate Carrot"},
         Uncommon = {"Red Lollipop", "Nightshade"},
         Rare = {"Candy Sunflower", "Mint", "Glowshroom", "Pear"},
         Legendary = {"Cranberry", "Durian", "Easter Egg", "Papaya"},
