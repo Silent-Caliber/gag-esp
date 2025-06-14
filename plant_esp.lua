@@ -3,16 +3,6 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local espMap = {}
 
-local function FormatNumber(n)
-    local s = tostring(math.floor(n or 0))
-    local formatted = s
-    while true do
-        formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
-        if k == 0 then break end
-    end
-    return formatted
-end
-
 local cropCategories = {
     Obtainable = {
         Common = {"Carrot", "Strawberry"},
@@ -73,8 +63,8 @@ local function getCategorizedTypes()
 end
 
 -- UI Sizes (adjusted for Infinite Sprinkler row)
-local normalSize = UDim2.new(0, 340, 0, 250)
-local compactSize = UDim2.new(0, 210, 0, 160)
+local normalSize = UDim2.new(0, 340, 0, 250) -- +30 height
+local compactSize = UDim2.new(0, 210, 0, 160) -- +30 height
 local normalPos = UDim2.new(0, 10, 0, 60)
 local compactPos = UDim2.new(0, 10, 0, 20)
 
@@ -422,25 +412,17 @@ local function getPP(model)
     return nil
 end
 
-local function createStyledESP(model, cropName, weight, price, statusList)
+local function createESP(model, labelText)
     if espMap[model] then
-        local tl = espMap[model]
-        tl.RichText = true
-        tl.Text = string.format(
-            '<font backgroundColor="#FF8C00" color="#FFFFFF"><b> %s </b></font>  <font color="#FFFFFF">%.1fkg</font>  <font color="#1CFF58"><b>%s$</b></font>\n%s',
-            cropName,
-            weight or 0,
-            FormatNumber(price or 0),
-            statusList or ""
-        )
-        return tl
+        espMap[model].Text = labelText
+        return espMap[model]
     end
     local pp = getPP(model)
     if not pp then return end
     local bg = Instance.new("BillboardGui", model)
     bg.Name = "PlantESP"
     bg.Adornee = pp
-    bg.Size = UDim2.new(0, 240, 0, 44)
+    bg.Size = UDim2.new(0, 120, 0, 36)
     bg.StudsOffset = Vector3.new(0, 4, 0)
     bg.AlwaysOnTop = true
     local tl = Instance.new("TextLabel", bg)
@@ -450,16 +432,9 @@ local function createStyledESP(model, cropName, weight, price, statusList)
     tl.TextStrokeColor3 = Color3.new(0, 0, 0)
     tl.TextStrokeTransparency = 0.2
     tl.Font = Enum.Font.SourceSansBold
-    tl.TextSize = 15
+    tl.TextSize = 12
     tl.TextWrapped = true
-    tl.RichText = true
-    tl.Text = string.format(
-        '<font backgroundColor="#FF8C00" color="#FFFFFF"><b> %s </b></font>  <font color="#FFFFFF">%.1fkg</font>  <font color="#1CFF58"><b>%s$</b></font>\n%s',
-        cropName,
-        weight or 0,
-        FormatNumber(price or 0),
-        statusList or ""
-    )
+    tl.Text = labelText
     espMap[model] = tl
     return tl
 end
@@ -537,21 +512,14 @@ local function update()
                     price = child.Value
                 end
             end
-            -- Gather mutation/status info for display
-            local statusList = {}
-            for _, child in ipairs(model:GetChildren()) do
-                if child:IsA("StringValue") and (child.Name:lower():find("mutation") or child.Name:lower():find("status")) then
-                    if child.Value:lower():find("pollinated") then
-                        table.insert(statusList, '<font color="#FFFF00"><b>Pollinated</b></font>')
-                    elseif child.Value:lower():find("shocked") then
-                        table.insert(statusList, '<font color="#66CCFF"><b>Shocked</b></font>')
-                    else
-                        table.insert(statusList, '<font color="#FFFFFF">'..child.Value..'</font>')
-                    end
-                end
+            local label = model.Name
+            if weight then
+                label = label .. "\nWt.: " .. tostring(weight)
             end
-            local statusString = table.concat(statusList, ' <font color="#FFFFFF">•</font> ')
-            createStyledESP(model, model.Name, weight, price, statusString)
+            if price then
+                label = label .. "\nPrice: " .. tostring(price)
+            end
+            createESP(model, label)
             validModels[model] = true
         end
     end
