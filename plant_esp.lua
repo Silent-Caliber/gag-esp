@@ -43,6 +43,8 @@ local rarityColors = {
     Prismatic = Color3.fromRGB(100,255,255),
 }
 
+local CalculatePlantValue = require(game:GetService("ReplicatedStorage").Modules.CalculatePlantValue)
+
 local function getCategorizedTypes()
     local cropsByCategory = {}
     for obtain, rarities in pairs(cropCategories) do
@@ -130,18 +132,17 @@ end
 local inputLabels = {"Max Dist", "Max ESP", "Nearby Dist"}
 local inputVars = {"maxDistance", "maxESP", "nearbyDistance"}
 
--- Initialize these variables with default values
 local maxDistance = 25
 local maxESP = 10
 local nearbyDistance = 15
 
-local inputValues = {maxDistance, maxESP, nearbyDistance} -- initial values
+local inputValues = {maxDistance, maxESP, nearbyDistance}
 
 local inputBoxes = {}
 local inputLabelObjects = {}
 
 for i, labelName in ipairs(inputLabels) do
-    local yPos = (#rarityOrder * 16) + (i - 1) * 24 + 4 -- position below Prismatic label with spacing
+    local yPos = (#rarityOrder * 16) + (i - 1) * 24 + 4
 
     local label = Instance.new("TextLabel", LegendCol)
     label.Size = UDim2.new(1, 0, 0, 16)
@@ -178,7 +179,6 @@ for i, labelName in ipairs(inputLabels) do
             end
             box.Text = tostring(val)
         else
-            -- revert to previous value if invalid
             box.Text = tostring(inputValues[i])
         end
     end)
@@ -265,7 +265,6 @@ NearbyScroll.ScrollBarThickness = 2
 local NearbyListLayout = Instance.new("UIListLayout", NearbyScroll)
 NearbyListLayout.Padding = UDim.new(0, 1)
 
--- Infinite Sprinkler UI Row (below NearbyFrame)
 local SprinklerFrame = Instance.new("Frame", Frame)
 SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
 SprinklerFrame.Position = UDim2.new(0, 65, 1, -28)
@@ -528,7 +527,6 @@ local function createSizeToggleBtn(frame)
         updateTextSizes(compact)
     end)
 
-    -- Initialize text sizes to normal
     updateTextSizes(false)
 
     return btn
@@ -536,7 +534,6 @@ end
 
 local SizeToggleBtn = createSizeToggleBtn(Frame)
 
--- ESP Core
 local function getPP(model)
     if model.PrimaryPart then return model.PrimaryPart end
     for _,c in ipairs(model:GetChildren()) do
@@ -570,6 +567,7 @@ local function createESP(model, labelText)
     tl.Font = Enum.Font.SourceSansBold
     tl.TextSize = 12
     tl.TextWrapped = true
+    tl.RichText = true
     tl.Text = labelText
     espMap[model] = tl
     return tl
@@ -636,22 +634,32 @@ local function update()
         table.sort(nearest, function(a, b) return a.dist < b.dist end)
         for i = 1, math.min(#nearest, maxESP) do
             local model = nearest[i].model
-            local weight, price
+            local weight
             for _, child in ipairs(model:GetChildren()) do
                 if child:IsA("NumberValue") and child.Name:lower():find("weight") then
                     weight = child.Value
-                elseif child:IsA("NumberValue") and (child.Name:lower():find("price") or child.Name:lower():find("sell")) then
-                    price = child.Value
+                    break
                 end
             end
+            local price
+            if CalculatePlantValue and typeof(CalculatePlantValue) == "table" and CalculatePlantValue.Calculate then
+                price = CalculatePlantValue.Calculate(model)
+            elseif CalculatePlantValue and typeof(CalculatePlantValue) == "function" then
+                price = CalculatePlantValue(model)
+            end
+
             local label = model.Name
             if weight then
                 label = label .. "\nWt.: " .. tostring(weight)
             end
             if price then
-                label = label .. "\nPrice: " .. tostring(price)
+                label = label .. string.format('\n<font color="rgb(80,255,80)">Price: %s</font>', tostring(price))
             end
-            createESP(model, label)
+
+            local espLabel = createESP(model, label)
+            if espLabel then
+                espLabel.RichText = true
+            end
             validModels[model] = true
         end
     end
@@ -659,7 +667,6 @@ local function update()
     updateNearbyPlants()
 end
 
--- Infinite Sprinkler Logic
 local infiniteSprinklerEnabled = false
 
 local function sprinklerAction()
@@ -674,7 +681,6 @@ local function sprinklerAction()
             if pp then
                 local dist = (pp.Position - root.Position).Magnitude
                 if dist <= range then
-                    -- Replace this with your game's actual watering method
                     local ReplicatedStorage = game:GetService("ReplicatedStorage")
                     local WaterEvent = ReplicatedStorage:FindFirstChild("WaterPlant")
                     if WaterEvent and WaterEvent:IsA("RemoteEvent") then
