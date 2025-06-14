@@ -3,6 +3,9 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local espMap = {}
 
+-- Require the CalculatePlantValue module (assumed to be a function)
+local CalculatePlantValue = require(game:GetService("ReplicatedStorage").Modules.CalculatePlantValue)
+
 local cropCategories = {
     Obtainable = {
         Common = {"Carrot", "Strawberry"},
@@ -42,8 +45,6 @@ local rarityColors = {
     Divine = Color3.fromRGB(255, 90, 90),
     Prismatic = Color3.fromRGB(100,255,255),
 }
-
-local CalculatePlantValue = require(game:GetService("ReplicatedStorage").Modules.CalculatePlantValue)
 
 local function getCategorizedTypes()
     local cropsByCategory = {}
@@ -265,6 +266,7 @@ NearbyScroll.ScrollBarThickness = 2
 local NearbyListLayout = Instance.new("UIListLayout", NearbyScroll)
 NearbyListLayout.Padding = UDim.new(0, 1)
 
+-- Infinite Sprinkler UI Row (below NearbyFrame)
 local SprinklerFrame = Instance.new("Frame", Frame)
 SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
 SprinklerFrame.Position = UDim2.new(0, 65, 1, -28)
@@ -641,25 +643,22 @@ local function update()
                     break
                 end
             end
-            local price
-            if CalculatePlantValue and typeof(CalculatePlantValue) == "table" and CalculatePlantValue.Calculate then
-                price = CalculatePlantValue.Calculate(model)
-            elseif CalculatePlantValue and typeof(CalculatePlantValue) == "function" then
-                price = CalculatePlantValue(model)
+
+            -- Calculate price using the module
+            local price = 0
+            if typeof(CalculatePlantValue) == "function" then
+                price = CalculatePlantValue(model) or 0
             end
 
             local label = model.Name
             if weight then
                 label = label .. "\nWt.: " .. tostring(weight)
             end
-            if price then
+            if price > 0 then
                 label = label .. string.format('\n<font color="rgb(80,255,80)">Price: %s</font>', tostring(price))
             end
 
-            local espLabel = createESP(model, label)
-            if espLabel then
-                espLabel.RichText = true
-            end
+            createESP(model, label)
             validModels[model] = true
         end
     end
@@ -667,6 +666,7 @@ local function update()
     updateNearbyPlants()
 end
 
+-- Infinite Sprinkler Logic
 local infiniteSprinklerEnabled = false
 
 local function sprinklerAction()
