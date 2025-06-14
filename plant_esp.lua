@@ -3,9 +3,6 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local espMap = {}
 
--- Require the CalculatePlantValue module (assumed to be a function)
-local CalculatePlantValue = require(game:GetService("ReplicatedStorage").Modules.CalculatePlantValue)
-
 local cropCategories = {
     Obtainable = {
         Common = {"Carrot", "Strawberry"},
@@ -133,17 +130,18 @@ end
 local inputLabels = {"Max Dist", "Max ESP", "Nearby Dist"}
 local inputVars = {"maxDistance", "maxESP", "nearbyDistance"}
 
+-- Initialize these variables with default values
 local maxDistance = 25
 local maxESP = 10
 local nearbyDistance = 15
 
-local inputValues = {maxDistance, maxESP, nearbyDistance}
+local inputValues = {maxDistance, maxESP, nearbyDistance} -- initial values
 
 local inputBoxes = {}
 local inputLabelObjects = {}
 
 for i, labelName in ipairs(inputLabels) do
-    local yPos = (#rarityOrder * 16) + (i - 1) * 24 + 4
+    local yPos = (#rarityOrder * 16) + (i - 1) * 24 + 4 -- position below Prismatic label with spacing
 
     local label = Instance.new("TextLabel", LegendCol)
     label.Size = UDim2.new(1, 0, 0, 16)
@@ -180,6 +178,7 @@ for i, labelName in ipairs(inputLabels) do
             end
             box.Text = tostring(val)
         else
+            -- revert to previous value if invalid
             box.Text = tostring(inputValues[i])
         end
     end)
@@ -529,6 +528,7 @@ local function createSizeToggleBtn(frame)
         updateTextSizes(compact)
     end)
 
+    -- Initialize text sizes to normal
     updateTextSizes(false)
 
     return btn
@@ -536,6 +536,7 @@ end
 
 local SizeToggleBtn = createSizeToggleBtn(Frame)
 
+-- ESP Core
 local function getPP(model)
     if model.PrimaryPart then return model.PrimaryPart end
     for _,c in ipairs(model:GetChildren()) do
@@ -569,7 +570,6 @@ local function createESP(model, labelText)
     tl.Font = Enum.Font.SourceSansBold
     tl.TextSize = 12
     tl.TextWrapped = true
-    tl.RichText = true
     tl.Text = labelText
     espMap[model] = tl
     return tl
@@ -636,28 +636,21 @@ local function update()
         table.sort(nearest, function(a, b) return a.dist < b.dist end)
         for i = 1, math.min(#nearest, maxESP) do
             local model = nearest[i].model
-            local weight
+            local weight, price
             for _, child in ipairs(model:GetChildren()) do
                 if child:IsA("NumberValue") and child.Name:lower():find("weight") then
                     weight = child.Value
-                    break
+                elseif child:IsA("NumberValue") and (child.Name:lower():find("price") or child.Name:lower():find("sell")) then
+                    price = child.Value
                 end
             end
-
-            -- Calculate price using the module
-            local price = 0
-            if typeof(CalculatePlantValue) == "function" then
-                price = CalculatePlantValue(model) or 0
-            end
-
             local label = model.Name
             if weight then
                 label = label .. "\nWt.: " .. tostring(weight)
             end
-            if price > 0 then
-                label = label .. string.format('\n<font color="rgb(80,255,80)">Price: %s</font>', tostring(price))
+            if price then
+                label = label .. "\nPrice: " .. tostring(price)
             end
-
             createESP(model, label)
             validModels[model] = true
         end
@@ -681,6 +674,7 @@ local function sprinklerAction()
             if pp then
                 local dist = (pp.Position - root.Position).Magnitude
                 if dist <= range then
+                    -- Replace this with your game's actual watering method
                     local ReplicatedStorage = game:GetService("ReplicatedStorage")
                     local WaterEvent = ReplicatedStorage:FindFirstChild("WaterPlant")
                     if WaterEvent and WaterEvent:IsA("RemoteEvent") then
