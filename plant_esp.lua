@@ -62,9 +62,9 @@ local function getCategorizedTypes()
     return cropsByCategory
 end
 
--- UI Sizes (adjusted for new right column)
-local normalSize = UDim2.new(0, 460, 0, 290)
-local compactSize = UDim2.new(0, 330, 0, 200)
+-- UI Sizes (adjusted for new horizontal row)
+local normalSize = UDim2.new(0, 680, 0, 290)
+local compactSize = UDim2.new(0, 500, 0, 200)
 local normalPos = UDim2.new(0, 10, 0, 60)
 local compactPos = UDim2.new(0, 10, 0, 20)
 
@@ -209,70 +209,126 @@ SprinklerToggleBtn.BorderSizePixel = 0
 local corner = Instance.new("UICorner", SprinklerToggleBtn)
 corner.CornerRadius = UDim.new(0, 6)
 
--- New right column for nearby and max inputs
-local RightControlsFrame = Instance.new("Frame", Frame)
-RightControlsFrame.Size = UDim2.new(0, 140, 1, -52)
-RightControlsFrame.Position = UDim2.new(0, 310, 0, 22)
-RightControlsFrame.BackgroundTransparency = 0.2
-RightControlsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-RightControlsFrame.BorderSizePixel = 0
+-- New horizontal controls row to the right of Unobtainable column
+local ControlsRowFrame = Instance.new("Frame", Frame)
+ControlsRowFrame.Size = UDim2.new(0, 370, 0, 120)
+ControlsRowFrame.Position = UDim2.new(0, 310, 0, 22)
+ControlsRowFrame.BackgroundTransparency = 0.2
+ControlsRowFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ControlsRowFrame.BorderSizePixel = 0
 
-local listLayout = Instance.new("UIListLayout", RightControlsFrame)
-listLayout.Padding = UDim.new(0, 6)
-listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+local horizontalLayout = Instance.new("UIListLayout", ControlsRowFrame)
+horizontalLayout.FillDirection = Enum.FillDirection.Horizontal
+horizontalLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+horizontalLayout.SortOrder = Enum.SortOrder.LayoutOrder
+horizontalLayout.Padding = UDim.new(0, 8)
 
--- Nearby Label
-local nearbyLabel = Instance.new("TextLabel", RightControlsFrame)
-nearbyLabel.Size = UDim2.new(1, 0, 0, 20)
-nearbyLabel.BackgroundTransparency = 1
-nearbyLabel.Text = "Nearby Plants"
-nearbyLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-nearbyLabel.Font = Enum.Font.SourceSansBold
-nearbyLabel.TextSize = 14
-nearbyLabel.LayoutOrder = 1
+-- Nearby plants container
+local NearbyContainer = Instance.new("Frame", ControlsRowFrame)
+NearbyContainer.Size = UDim2.new(0, 180, 1, 0)
+NearbyContainer.BackgroundTransparency = 1
+NearbyContainer.LayoutOrder = 1
 
--- Nearby Scroll (reparent and resize)
-NearbyScroll.Parent = RightControlsFrame
-NearbyScroll.Size = UDim2.new(1, -10, 0, 100)
-NearbyScroll.Position = UDim2.new(0, 5, 0, 0)
-NearbyScroll.LayoutOrder = 2
+local NearbyLabel = Instance.new("TextLabel", NearbyContainer)
+NearbyLabel.Size = UDim2.new(1, 0, 0, 20)
+NearbyLabel.Position = UDim2.new(0, 0, 0, 0)
+NearbyLabel.BackgroundTransparency = 1
+NearbyLabel.Text = "Nearby Plants"
+NearbyLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+NearbyLabel.Font = Enum.Font.SourceSansBold
+NearbyLabel.TextSize = 14
+
+NearbyScroll.Parent = NearbyContainer
+NearbyScroll.Size = UDim2.new(1, 0, 1, -20)
+NearbyScroll.Position = UDim2.new(0, 0, 0, 20)
 NearbyScroll.CanvasSize = UDim2.new(0, 0, 0, 100)
 
--- Max Nearby Plants input
-local maxNearbyPlants = 10
-local maxPlantsBox = Instance.new("TextBox", RightControlsFrame)
-maxPlantsBox.Size = UDim2.new(1, -10, 0, 24)
-maxPlantsBox.PlaceholderText = "Max Nearby Plants"
-maxPlantsBox.Text = tostring(maxNearbyPlants)
+-- Max Nearby Plants input container
+local MaxNearbyPlantsContainer = Instance.new("Frame", ControlsRowFrame)
+MaxNearbyPlantsContainer.Size = UDim2.new(0, 60, 0, 40)
+MaxNearbyPlantsContainer.BackgroundTransparency = 1
+MaxNearbyPlantsContainer.LayoutOrder = 2
+
+local maxPlantsLabel = Instance.new("TextLabel", MaxNearbyPlantsContainer)
+maxPlantsLabel.Size = UDim2.new(1, 0, 0, 16)
+maxPlantsLabel.Position = UDim2.new(0, 0, 0, 0)
+maxPlantsLabel.BackgroundTransparency = 1
+maxPlantsLabel.Text = "Max Nearby"
+maxPlantsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+maxPlantsLabel.Font = Enum.Font.SourceSansBold
+maxPlantsLabel.TextSize = 12
+
+local maxPlantsBox = Instance.new("TextBox", MaxNearbyPlantsContainer)
+maxPlantsBox.Size = UDim2.new(1, 0, 0, 20)
+maxPlantsBox.Position = UDim2.new(0, 0, 0, 20)
+maxPlantsBox.PlaceholderText = "Plants"
+maxPlantsBox.Text = "10"
 maxPlantsBox.ClearTextOnFocus = false
 maxPlantsBox.Font = Enum.Font.SourceSans
 maxPlantsBox.TextSize = 12
 maxPlantsBox.TextColor3 = Color3.new(1,1,1)
 maxPlantsBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 maxPlantsBox.BorderSizePixel = 0
-maxPlantsBox.LayoutOrder = 3
 
--- Max Nearby Distance input
-local maxNearbyDistance = 15
-local maxDistanceBox = Instance.new("TextBox", RightControlsFrame)
-maxDistanceBox.Size = UDim2.new(1, -10, 0, 24)
-maxDistanceBox.PlaceholderText = "Max Nearby Distance"
-maxDistanceBox.Text = tostring(maxNearbyDistance)
+-- Max Nearby Distance input container
+local MaxNearbyDistanceContainer = Instance.new("Frame", ControlsRowFrame)
+MaxNearbyDistanceContainer.Size = UDim2.new(0, 80, 0, 40)
+MaxNearbyDistanceContainer.BackgroundTransparency = 1
+MaxNearbyDistanceContainer.LayoutOrder = 3
+
+local maxDistanceLabel = Instance.new("TextLabel", MaxNearbyDistanceContainer)
+maxDistanceLabel.Size = UDim2.new(1, 0, 0, 16)
+maxDistanceLabel.Position = UDim2.new(0, 0, 0, 0)
+maxDistanceLabel.BackgroundTransparency = 1
+maxDistanceLabel.Text = "Max Distance"
+maxDistanceLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+maxDistanceLabel.Font = Enum.Font.SourceSansBold
+maxDistanceLabel.TextSize = 12
+
+local maxDistanceBox = Instance.new("TextBox", MaxNearbyDistanceContainer)
+maxDistanceBox.Size = UDim2.new(1, 0, 0, 20)
+maxDistanceBox.Position = UDim2.new(0, 0, 0, 20)
+maxDistanceBox.PlaceholderText = "Distance"
+maxDistanceBox.Text = "15"
 maxDistanceBox.ClearTextOnFocus = false
 maxDistanceBox.Font = Enum.Font.SourceSans
 maxDistanceBox.TextSize = 12
 maxDistanceBox.TextColor3 = Color3.new(1,1,1)
 maxDistanceBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 maxDistanceBox.BorderSizePixel = 0
-maxDistanceBox.LayoutOrder = 4
 
--- Max ESP Plants input (reparent and resize)
-ESPControlFrame.Parent = RightControlsFrame
-ESPControlFrame.Size = UDim2.new(1, -10, 0, 24)
-ESPControlFrame.Position = UDim2.new(0, 5, 0, 0)
-ESPControlFrame.LayoutOrder = 5
+-- Max ESP Plants input container
+local ESPControlFrame = Instance.new("Frame", ControlsRowFrame)
+ESPControlFrame.Size = UDim2.new(0, 70, 0, 40)
+ESPControlFrame.LayoutOrder = 4
 
--- Input validation and update for maxNearbyPlants
+local ESPLabel = Instance.new("TextLabel", ESPControlFrame)
+ESPLabel.Size = UDim2.new(1, 0, 0, 16)
+ESPLabel.Position = UDim2.new(0, 0, 0, 0)
+ESPLabel.BackgroundTransparency = 1
+ESPLabel.Text = "Max ESP"
+ESPLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+ESPLabel.Font = Enum.Font.SourceSansBold
+ESPLabel.TextSize = 12
+
+local ESPInputBox = Instance.new("TextBox", ESPControlFrame)
+ESPInputBox.Size = UDim2.new(1, 0, 0, 20)
+ESPInputBox.Position = UDim2.new(0, 0, 0, 20)
+ESPInputBox.PlaceholderText = "Plants"
+ESPInputBox.Text = "10"
+ESPInputBox.ClearTextOnFocus = false
+ESPInputBox.Font = Enum.Font.SourceSans
+ESPInputBox.TextSize = 12
+ESPInputBox.TextColor3 = Color3.new(1,1,1)
+ESPInputBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+ESPInputBox.BorderSizePixel = 0
+
+-- Variables to hold current values
+local maxNearbyPlants = 10
+local maxNearbyDistance = 15
+local maxESP = 10
+
+-- Input validation and update handlers
 maxPlantsBox.FocusLost:Connect(function()
     local val = tonumber(maxPlantsBox.Text)
     if val and val > 0 then
@@ -282,7 +338,6 @@ maxPlantsBox.FocusLost:Connect(function()
     end
 end)
 
--- Input validation and update for maxNearbyDistance
 maxDistanceBox.FocusLost:Connect(function()
     local val = tonumber(maxDistanceBox.Text)
     if val and val > 0 then
@@ -290,26 +345,6 @@ maxDistanceBox.FocusLost:Connect(function()
     else
         maxDistanceBox.Text = tostring(maxNearbyDistance)
     end
-end)
-
--- Input validation and update for maxESP
-local maxESP = 10
-local ESPInputBox = ESPControlFrame:FindFirstChildOfClass("TextBox")
-if not ESPInputBox then
-    ESPInputBox = Instance.new("TextBox", ESPControlFrame)
-    ESPInputBox.Size = UDim2.new(1, 0, 1, 0)
-    ESPInputBox.ClearTextOnFocus = false
-    ESPInputBox.PlaceholderText = "Max ESP Plants"
-    ESPInputBox.Font = Enum.Font.SourceSans
-    ESPInputBox.TextSize = 12
-    ESPInputBox.TextColor3 = Color3.new(1,1,1)
-    ESPInputBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    ESPInputBox.BorderSizePixel = 0
-    ESPInputBox.Text = tostring(maxESP)
-end
-
-ESPInputBox:GetPropertyChangedSignal("Text"):Connect(function()
-    ESPInputBox.Text = string.gsub(ESPInputBox.Text, "%D", "")
 end)
 
 ESPInputBox.FocusLost:Connect(function()
@@ -325,7 +360,7 @@ LegendCol.Parent = Frame
 ObtainCol.Parent = Frame
 UnobtainCol.Parent = Frame
 SprinklerFrame.Parent = Frame
-RightControlsFrame.Parent = Frame
+ControlsRowFrame.Parent = Frame
 
 local selectedTypes = {}
 
@@ -465,8 +500,8 @@ local function createSizeToggleBtn(frame)
             ObtainCol.Position = UDim2.new(0, 65, 0, 22)
             UnobtainCol.Size = UDim2.new(0, 70, 1, -52)
             UnobtainCol.Position = UDim2.new(0, 135, 0, 22)
-            RightControlsFrame.Size = UDim2.new(0, 140, 1, -52)
-            RightControlsFrame.Position = UDim2.new(0, 310, 0, 22)
+            ControlsRowFrame.Size = UDim2.new(0, 370, 0, 120)
+            ControlsRowFrame.Position = UDim2.new(0, 310, 0, 22)
             SprinklerFrame.Size = UDim2.new(0, 140, 0, 24)
             SprinklerFrame.Position = UDim2.new(0, 65, 1, -110)
         else
@@ -476,8 +511,8 @@ local function createSizeToggleBtn(frame)
             ObtainCol.Position = UDim2.new(0, 65, 0, 22)
             UnobtainCol.Size = UDim2.new(0, 120, 1, -52)
             UnobtainCol.Position = UDim2.new(0, 185, 0, 22)
-            RightControlsFrame.Size = UDim2.new(0, 140, 1, -52)
-            RightControlsFrame.Position = UDim2.new(0, 310, 0, 22)
+            ControlsRowFrame.Size = UDim2.new(0, 370, 0, 120)
+            ControlsRowFrame.Position = UDim2.new(0, 310, 0, 22)
             SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
             SprinklerFrame.Position = UDim2.new(0, 65, 1, -110)
         end
