@@ -14,7 +14,7 @@ local cropCategories = {
         Prismatic = {"Beanstalk", "Ember Lily"},
     },
     Unobtainable = {
-        Common = {"Chocolate Carrot"},
+        Common = {"Chocolate crops"},
         Uncommon = {"Red Lollipop", "Nightshade"},
         Rare = {"Candy Sunflower", "Mint", "Glowshroom", "Pear"},
         Legendary = {"Cranberry", "Durian", "Easter Egg", "Papaya"},
@@ -412,9 +412,22 @@ local function getPP(model)
     return nil
 end
 
-local function createESP(model, labelText)
+-- Add this helper for formatting price
+local function formatNumber(n)
+    local str = string.format("%.3f", n)
+    local before, after = str:match("^(.-)%.(%d+)$")
+    before = before:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
+    return before .. "." .. after
+end
+
+-- Modified createESP to add price as a green line under weight
+local function createESP(model, labelText, price)
     if espMap[model] then
         espMap[model].Text = labelText
+        if espMap[model].Parent and espMap[model].Parent:FindFirstChild("PriceESP") then
+            local priceLabel = espMap[model].Parent.PriceESP
+            priceLabel.Text = price and ("<font color='rgb(80,255,80)'>" .. formatNumber(price) .. "₵</font>") or ""
+        end
         return espMap[model]
     end
     local pp = getPP(model)
@@ -425,8 +438,10 @@ local function createESP(model, labelText)
     bg.Size = UDim2.new(0, 120, 0, 36)
     bg.StudsOffset = Vector3.new(0, 4, 0)
     bg.AlwaysOnTop = true
+    -- Main label (name, weight, etc)
     local tl = Instance.new("TextLabel", bg)
-    tl.Size = UDim2.new(1, 0, 1, 0)
+    tl.Size = UDim2.new(1, 0, 0, 18)
+    tl.Position = UDim2.new(0, 0, 0, 0)
     tl.BackgroundTransparency = 1
     tl.TextColor3 = Color3.new(1, 1, 1)
     tl.TextStrokeColor3 = Color3.new(0, 0, 0)
@@ -434,7 +449,21 @@ local function createESP(model, labelText)
     tl.Font = Enum.Font.SourceSansBold
     tl.TextSize = 12
     tl.TextWrapped = true
+    tl.RichText = true
     tl.Text = labelText
+    -- Price label (green, below)
+    local priceLabel = Instance.new("TextLabel", bg)
+    priceLabel.Name = "PriceESP"
+    priceLabel.Size = UDim2.new(1, 0, 0, 16)
+    priceLabel.Position = UDim2.new(0, 0, 0, 18)
+    priceLabel.BackgroundTransparency = 1
+    priceLabel.TextColor3 = Color3.fromRGB(80,255,80)
+    priceLabel.TextStrokeTransparency = 0.2
+    priceLabel.Font = Enum.Font.SourceSansBold
+    priceLabel.TextSize = 12
+    priceLabel.TextWrapped = true
+    priceLabel.RichText = true
+    priceLabel.Text = price and ("<font color='rgb(80,255,80)'>" .. formatNumber(price) .. "₵</font>") or ""
     espMap[model] = tl
     return tl
 end
@@ -516,10 +545,8 @@ local function update()
             if weight then
                 label = label .. "\nWt.: " .. tostring(weight)
             end
-            if price then
-                label = label .. "\nPrice: " .. tostring(price)
-            end
-            createESP(model, label)
+            -- Pass price as third argument!
+            createESP(model, label, price)
             validModels[model] = true
         end
     end
