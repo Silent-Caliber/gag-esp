@@ -62,9 +62,9 @@ local function getCategorizedTypes()
     return cropsByCategory
 end
 
--- UI Sizes (adjusted for Infinite Sprinkler row)
-local normalSize = UDim2.new(0, 340, 0, 250) -- +30 height
-local compactSize = UDim2.new(0, 210, 0, 160) -- +30 height
+-- UI Sizes (square for alignment)
+local normalSize = UDim2.new(0, 340, 0, 340)
+local compactSize = UDim2.new(0, 210, 0, 210)
 local normalPos = UDim2.new(0, 10, 0, 60)
 local compactPos = UDim2.new(0, 10, 0, 20)
 
@@ -263,27 +263,51 @@ NearbyScroll.ScrollBarThickness = 2
 local NearbyListLayout = Instance.new("UIListLayout", NearbyScroll)
 NearbyListLayout.Padding = UDim.new(0, 1)
 
--- Infinite Sprinkler UI Row (below NearbyFrame)
-local SprinklerFrame = Instance.new("Frame", Frame)
-SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
-SprinklerFrame.Position = UDim2.new(0, 65, 1, -28)
-SprinklerFrame.BackgroundTransparency = 0.3
-SprinklerFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-SprinklerFrame.BorderSizePixel = 0
+-- BOTTOM BAR for Nearby Dist and Sprinkler Toggle
+local BottomBar = Instance.new("Frame", Frame)
+BottomBar.Size = UDim2.new(1, 0, 0, 38)
+BottomBar.Position = UDim2.new(0, 0, 1, -38)
+BottomBar.BackgroundTransparency = 0.2
+BottomBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+BottomBar.BorderSizePixel = 0
 
-local SprinklerLabel = Instance.new("TextLabel", SprinklerFrame)
-SprinklerLabel.Size = UDim2.new(0.6, 0, 1, 0)
-SprinklerLabel.Position = UDim2.new(0, 4, 0, 0)
-SprinklerLabel.BackgroundTransparency = 1
-SprinklerLabel.Text = "Infinite Sprinkler"
-SprinklerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-SprinklerLabel.Font = Enum.Font.SourceSansBold
-SprinklerLabel.TextSize = 12
-SprinklerLabel.TextXAlignment = Enum.TextXAlignment.Left
+-- Nearby Dist label and box (LEFT)
+local NearbyDistLabel = Instance.new("TextLabel", BottomBar)
+NearbyDistLabel.Size = UDim2.new(0, 90, 0, 18)
+NearbyDistLabel.Position = UDim2.new(0, 8, 0, 5)
+NearbyDistLabel.BackgroundTransparency = 1
+NearbyDistLabel.Text = "Nearby Dist"
+NearbyDistLabel.TextColor3 = Color3.fromRGB(255,255,255)
+NearbyDistLabel.Font = Enum.Font.SourceSansBold
+NearbyDistLabel.TextSize = 12
+NearbyDistLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-local SprinklerToggleBtn = Instance.new("TextButton", SprinklerFrame)
-SprinklerToggleBtn.Size = UDim2.new(0, 50, 0, 18)
-SprinklerToggleBtn.Position = UDim2.new(1, -54, 0.5, -9)
+local NearbyDistBox = Instance.new("TextBox", BottomBar)
+NearbyDistBox.Size = UDim2.new(0, 60, 0, 18)
+NearbyDistBox.Position = UDim2.new(0, 100, 0, 5)
+NearbyDistBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+NearbyDistBox.TextColor3 = Color3.new(1, 1, 1)
+NearbyDistBox.Text = tostring(nearbyDistance)
+NearbyDistBox.Font = Enum.Font.SourceSansBold
+NearbyDistBox.TextSize = 14
+NearbyDistBox.ClearTextOnFocus = false
+NearbyDistBox.TextStrokeTransparency = 0.5
+NearbyDistBox.TextWrapped = false
+NearbyDistBox.PlaceholderText = "Enter number"
+NearbyDistBox.FocusLost:Connect(function(enterPressed)
+    local val = tonumber(NearbyDistBox.Text)
+    if val and val > 0 then
+        nearbyDistance = val
+        NearbyDistBox.Text = tostring(val)
+    else
+        NearbyDistBox.Text = tostring(nearbyDistance)
+    end
+end)
+
+-- Infinite Sprinkler Toggle (RIGHT)
+local SprinklerToggleBtn = Instance.new("TextButton", BottomBar)
+SprinklerToggleBtn.Size = UDim2.new(0, 60, 0, 28)
+SprinklerToggleBtn.Position = UDim2.new(1, -68, 0.5, -14)
 SprinklerToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 SprinklerToggleBtn.TextColor3 = Color3.new(1, 1, 1)
 SprinklerToggleBtn.Text = "OFF"
@@ -298,7 +322,7 @@ LegendCol.Parent = Frame
 ObtainCol.Parent = Frame
 UnobtainCol.Parent = Frame
 NearbyFrame.Parent = Frame
-SprinklerFrame.Parent = Frame
+BottomBar.Parent = Frame
 
 local selectedTypes = {}
 
@@ -414,7 +438,7 @@ local function createSizeToggleBtn(frame)
     btn.Name = "SizeToggleBtn"
     btn.Parent = frame
     btn.Size = UDim2.new(0, 30, 0, 30)
-    btn.Position = UDim2.new(1, -36, 0, 2)
+    btn.Position = UDim2.new(1, -36, 0, 0) -- Top right, flush
     btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Text = "🔍"
@@ -440,8 +464,8 @@ local function createSizeToggleBtn(frame)
             UnobtainCol.Position = UDim2.new(0, 135, 0, 22)
             NearbyFrame.Size = UDim2.new(0, 140, 0, 16)
             NearbyFrame.Position = UDim2.new(0, 65, 1, -36)
-            SprinklerFrame.Size = UDim2.new(0, 140, 0, 16)
-            SprinklerFrame.Position = UDim2.new(0, 65, 1, -18)
+            BottomBar.Size = UDim2.new(1, 0, 0, 30)
+            BottomBar.Position = UDim2.new(0, 0, 1, -30)
         else
             frame.Size = normalSize
             frame.Position = normalPos
@@ -451,8 +475,8 @@ local function createSizeToggleBtn(frame)
             UnobtainCol.Position = UDim2.new(0, 185, 0, 22)
             NearbyFrame.Size = UDim2.new(0, 275, 0, 24)
             NearbyFrame.Position = UDim2.new(0, 65, 1, -52)
-            SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
-            SprinklerFrame.Position = UDim2.new(0, 65, 1, -28)
+            BottomBar.Size = UDim2.new(1, 0, 0, 38)
+            BottomBar.Position = UDim2.new(0, 0, 1, -38)
         end
     end)
 end
