@@ -532,30 +532,47 @@ end
 
 local SizeToggleBtn = createSizeToggleBtn(Frame)
 
+-- FIXED: Improved PrimaryPart detection
 local function getPP(model)
-    if model.PrimaryPart then return model.PrimaryPart end
-    for _,c in ipairs(model:GetChildren()) do
-        if c:IsA("BasePart") then
-            model.PrimaryPart = c
-            return c
+    if model.PrimaryPart then 
+        return model.PrimaryPart 
+    end
+    
+    -- First try to find a PrimaryPart
+    if model:FindFirstChild("PrimaryPart") then
+        return model.PrimaryPart
+    end
+    
+    -- Then look for any BasePart
+    for _, child in ipairs(model:GetDescendants()) do
+        if child:IsA("BasePart") then
+            return child
         end
     end
+    
     return nil
 end
 
+-- FIXED: ESP creation and display
 local function createESP(model, labelText)
     if espMap[model] then
         espMap[model].Text = labelText
         return espMap[model]
     end
+    
     local pp = getPP(model)
-    if not pp then return end
-    local bg = Instance.new("BillboardGui", model)
+    if not pp then 
+        return 
+    end
+    
+    local bg = Instance.new("BillboardGui")
     bg.Name = "PlantESP"
     bg.Adornee = pp
-    bg.Size = UDim2.new(0, 200, 0, 24)   -- Wider to accommodate single line
+    bg.Size = UDim2.new(0, 300, 0, 30)   -- Wider to accommodate text
     bg.StudsOffset = Vector3.new(0, 4, 0)
     bg.AlwaysOnTop = true
+    bg.MaxDistance = 1000
+    bg.Parent = pp  -- Parent to part instead of model
     
     local tl = Instance.new("TextLabel", bg)
     tl.Size = UDim2.new(1, 0, 1, 0)
@@ -565,10 +582,12 @@ local function createESP(model, labelText)
     tl.TextStrokeTransparency = 0        -- 100% visible stroke
     tl.TextStrokeWidth = 4               -- Thicker stroke (4px)
     tl.Font = Enum.Font.FredokaOne
-    tl.TextSize = 14                     -- Slightly larger font
+    tl.TextSize = 14                     
     tl.TextWrapped = false               -- Single line
     tl.RichText = true
     tl.Text = labelText
+    tl.ZIndex = 10
+    
     espMap[model] = tl
     return tl
 end
@@ -576,7 +595,9 @@ end
 local function cleanup(validModels)
     for model, gui in pairs(espMap) do
         if not validModels[model] then
-            if gui.Parent then gui.Parent:Destroy() end
+            if gui and gui.Parent then 
+                gui:Destroy() 
+            end
             espMap[model] = nil
         end
     end
@@ -620,6 +641,7 @@ local function update()
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local nearest = {}
+    
     if root then
         for _, model in ipairs(workspace:GetDescendants()) do
             if model:IsA("Model") and selectedTypes[model.Name] then
@@ -632,11 +654,13 @@ local function update()
                 end
             end
         end
+        
         table.sort(nearest, function(a, b) return a.dist < b.dist end)
+        
         for i = 1, math.min(#nearest, maxESP) do
             local model = nearest[i].model
             local weight
-            for _, child in ipairs(model:GetChildren()) do
+            for _, child in ipairs(model:GetDescendants()) do
                 if child:IsA("NumberValue") and child.Name:lower():find("weight") then
                     weight = child.Value
                     break
@@ -649,7 +673,10 @@ local function update()
             local color = rarityColors[rarity] or Color3.new(1,1,1)
             
             -- Convert color to hex for RichText
-            local hexColor = string.format("#%02X%02X%02X", math.floor(color.r * 255), math.floor(color.g * 255), math.floor(color.b * 255))
+            local hexColor = string.format("#%02X%02X%02X", 
+                math.floor(color.r * 255), 
+                math.floor(color.g * 255), 
+                math.floor(color.b * 255))
             
             local price
             if CalculatePlantValue and typeof(CalculatePlantValue) == "table" and CalculatePlantValue.Calculate then
@@ -658,21 +685,17 @@ local function update()
                 price = CalculatePlantValue(model)
             end
 
-            -- New ESP format: Crop Name - Weight - Price
+            -- Construct ESP text
             local label = string.format("<font color='%s'>%s</font>", hexColor, model.Name)
             
-            -- Add weight with kg unit and one decimal place
             if weight then
                 if type(weight) == "number" then
-                    -- Format to one decimal and add kg
-                    local weightText = string.format("%.1f kg", weight)
-                    label = label .. string.format(" - <font color='#FFFFFF'>%s</font>", weightText)
+                    label = label .. string.format(" - <font color='#FFFFFF'>%.1f kg</font>", weight)
                 else
                     label = label .. string.format(" - <font color='#FFFFFF'>%s</font>", tostring(weight))
                 end
             end
             
-            -- Add price in green
             if price then
                 label = label .. string.format(' - <font color="rgb(80,255,80)">%s</font>', tostring(price))
             end
@@ -684,6 +707,7 @@ local function update()
             validModels[model] = true
         end
     end
+    
     cleanup(validModels)
     updateNearbyPlants()
 end
@@ -691,6 +715,6 @@ end
 spawn(function()
     while true do
         update()
-        wait(1)
+        wait(0.5)  -- More frequent updates
     end
 end)
