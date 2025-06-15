@@ -543,10 +543,9 @@ local function getPP(model)
     return nil
 end
 
-local function createESP(model, labelText, rarity)
+local function createESP(model, labelText)
     if espMap[model] then
         espMap[model].Text = labelText
-        espMap[model].TextColor3 = rarityColors[rarity] or Color3.new(1,1,1)
         return espMap[model]
     end
     local pp = getPP(model)
@@ -560,7 +559,7 @@ local function createESP(model, labelText, rarity)
     local tl = Instance.new("TextLabel", bg)
     tl.Size = UDim2.new(1, 0, 1, 0)
     tl.BackgroundTransparency = 1
-    tl.TextColor3 = rarityColors[rarity] or Color3.new(1,1,1)
+    tl.TextColor3 = Color3.new(1, 1, 1) -- Default to white
     tl.TextStrokeColor3 = Color3.new(0, 0, 0)
     tl.TextStrokeTransparency = 0.2
     tl.Font = Enum.Font.SourceSansBold
@@ -641,28 +640,32 @@ local function update()
                     break
                 end
             end
+            
+            -- Get crop rarity for coloring
+            local cropInfo = cropSet[model.Name:lower()]
+            local rarity = cropInfo and cropInfo.rarity or "Common"
+            local color = rarityColors[rarity] or Color3.new(1,1,1)
+            
+            -- Convert color to hex for RichText
+            local hexColor = string.format("#%02X%02X%02X", math.floor(color.r * 255), math.floor(color.g * 255), math.floor(color.b * 255))
+            
             local price
             if CalculatePlantValue and typeof(CalculatePlantValue) == "table" and CalculatePlantValue.Calculate then
                 price = CalculatePlantValue.Calculate(model)
             elseif CalculatePlantValue and typeof(CalculatePlantValue) == "function" then
                 price = CalculatePlantValue(model)
             end
-            
-            -- Get crop rarity for coloring
-            local cropInfo = cropSet[model.Name:lower()]
-            local rarity = cropInfo and cropInfo.rarity or "Common"
 
-            local label = model.Name
+            -- Construct label with RichText formatting
+            local label = string.format("<font color='%s'>%s</font>", hexColor, model.Name)
             if weight then
-                label = label .. "\nWt.: " .. tostring(weight)
+                label = label .. string.format("\n<font color='#FFFFFF'>Wt.: %s</font>", tostring(weight)) -- White text for weight
             end
             if price then
-                -- Keep price green as before
                 label = label .. string.format('\n<font color="rgb(80,255,80)">Price: %s</font>', tostring(price))
             end
 
-            -- Pass rarity to createESP
-            local espLabel = createESP(model, label, rarity)
+            local espLabel = createESP(model, label)
             if espLabel then
                 espLabel.RichText = true
             end
