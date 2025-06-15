@@ -556,17 +556,22 @@ local function createESP(model, labelText)
     bg.Size = UDim2.new(0, 120, 0, 36)
     bg.StudsOffset = Vector3.new(0, 4, 0)
     bg.AlwaysOnTop = true
+    
     local tl = Instance.new("TextLabel", bg)
     tl.Size = UDim2.new(1, 0, 1, 0)
     tl.BackgroundTransparency = 1
-    tl.TextColor3 = Color3.new(1, 1, 1) -- Default to white
-    tl.TextStrokeColor3 = Color3.new(0, 0, 0)
-    tl.TextStrokeTransparency = 0.2
-    tl.Font = Enum.Font.SourceSansBold
+    tl.TextColor3 = Color3.new(1, 1, 1)
+    tl.Font = Enum.Font.FredokaOne
     tl.TextSize = 12
     tl.TextWrapped = true
     tl.RichText = true
     tl.Text = labelText
+    
+    -- Enhanced text stroke for better visibility
+    tl.TextStrokeColor3 = Color3.new(0, 0, 0)
+    tl.TextStrokeTransparency = 0.3  -- Slightly thicker stroke
+    tl.TextXAlignment = Enum.TextXAlignment.Center
+    
     espMap[model] = tl
     return tl
 end
@@ -636,7 +641,8 @@ local function update()
             local weight
             for _, child in ipairs(model:GetChildren()) do
                 if child:IsA("NumberValue") and child.Name:lower():find("weight") then
-                    weight = child.Value
+                    -- Format weight to 1 decimal with "kg" suffix
+                    weight = string.format("%.1f kg", child.Value)
                     break
                 end
             end
@@ -659,10 +665,10 @@ local function update()
             -- Construct label with RichText formatting
             local label = string.format("<font color='%s'>%s</font>", hexColor, model.Name)
             if weight then
-                label = label .. string.format("\n<font color='#FFFFFF'>Wt.: %s</font>", tostring(weight)) -- White text for weight
+                label = label .. string.format("\n<font color='#FFFFFF'>%s</font>", weight) -- White text for weight
             end
             if price then
-                label = label .. string.format('\n<font color="rgb(80,255,80)">Price: %s</font>', tostring(price))
+                label = label .. string.format('\n<font color="#50FF50">%s</font>', tostring(price))
             end
 
             local espLabel = createESP(model, label)
