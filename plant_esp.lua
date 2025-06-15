@@ -567,9 +567,10 @@ local function createESP(model, labelText)
     tl.RichText = true
     tl.Text = labelText
     
-    -- Enhanced text stroke for better visibility
+    -- Enhanced text stroke with thickness 1
     tl.TextStrokeColor3 = Color3.new(0, 0, 0)
-    tl.TextStrokeTransparency = 0.3  -- Slightly thicker stroke
+    tl.TextStrokeTransparency = 0.3
+    tl.TextStrokeThickness = 1
     tl.TextXAlignment = Enum.TextXAlignment.Center
     
     espMap[model] = tl
@@ -662,13 +663,25 @@ local function update()
                 price = CalculatePlantValue(model)
             end
 
-            -- Construct label with RichText formatting
-            local label = string.format("<font color='%s'>%s</font>", hexColor, model.Name)
-            if weight then
-                label = label .. string.format("\n<font color='#FFFFFF'>%s</font>", weight) -- White text for weight
-            end
-            if price then
-                label = label .. string.format('\n<font color="#50FF50">%s</font>', tostring(price))
+            -- Construct aligned label in "Name - Weight - Price" format
+            local label
+            if weight and price then
+                label = string.format(
+                    '<font color="%s">%s</font> - <font color="#FFFFFF">%s</font> - <font color="#50FF50">%s</font>',
+                    hexColor, model.Name, weight, tostring(price)
+                )
+            elseif weight then
+                label = string.format(
+                    '<font color="%s">%s</font> - <font color="#FFFFFF">%s</font>',
+                    hexColor, model.Name, weight
+                )
+            elseif price then
+                label = string.format(
+                    '<font color="%s">%s</font> - <font color="#50FF50">%s</font>',
+                    hexColor, model.Name, tostring(price)
+                )
+            else
+                label = string.format('<font color="%s">%s</font>', hexColor, model.Name)
             end
 
             local espLabel = createESP(model, label)
