@@ -556,13 +556,14 @@ local function createESP(model, labelText)
     bg.Size = UDim2.new(0, 120, 0, 36)
     bg.StudsOffset = Vector3.new(0, 4, 0)
     bg.AlwaysOnTop = true
+    
     local tl = Instance.new("TextLabel", bg)
     tl.Size = UDim2.new(1, 0, 1, 0)
     tl.BackgroundTransparency = 1
-    tl.TextColor3 = Color3.new(1, 1, 1) -- Default to white
+    tl.TextColor3 = Color3.new(1, 1, 1)
     tl.TextStrokeColor3 = Color3.new(0, 0, 0)
-    tl.TextStrokeTransparency = 0.2
-    tl.Font = Enum.Font.SourceSansBold
+    tl.TextStrokeTransparency = 0.3 -- Slight black stroke
+    tl.Font = Enum.Font.FredokaOne -- Use FredokaOne font
     tl.TextSize = 12
     tl.TextWrapped = true
     tl.RichText = true
@@ -658,9 +659,18 @@ local function update()
 
             -- Construct label with RichText formatting
             local label = string.format("<font color='%s'>%s</font>", hexColor, model.Name)
+            
+            -- Add weight in kg with one decimal place
             if weight then
-                label = label .. string.format("\n<font color='#FFFFFF'>Wt.: %s</font>", tostring(weight)) -- White text for weight
+                if type(weight) == "number" then
+                    -- Format to one decimal place and add kg unit
+                    label = label .. string.format("\n<font color='#FFFFFF'>%.1f kg</font>", weight)
+                else
+                    label = label .. string.format("\n<font color='#FFFFFF'>Wt.: %s</font>", tostring(weight))
+                end
             end
+            
+            -- Add price in green
             if price then
                 label = label .. string.format('\n<font color="rgb(80,255,80)">Price: %s</font>', tostring(price))
             end
