@@ -561,10 +561,9 @@ local function createESP(model, labelText)
     tl.Size = UDim2.new(1, 0, 1, 0)
     tl.BackgroundTransparency = 1
     tl.TextColor3 = Color3.new(1, 1, 1)
-    tl.TextStrokeColor3 = Color3.new(0, 0, 0)  -- Pure black stroke
-    tl.TextStrokeTransparency = 0             -- 100% opaque
-    tl.TextStrokeWidth = 2                    -- Increased stroke width
-    tl.Font = Enum.Font.FredokaOne
+    tl.TextStrokeColor3 = Color3.new(0, 0, 0)
+    tl.TextStrokeTransparency = 0.3 -- Slight black stroke
+    tl.Font = Enum.Font.FredokaOne -- Use FredokaOne font
     tl.TextSize = 12
     tl.TextWrapped = true
     tl.RichText = true
