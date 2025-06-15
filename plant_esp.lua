@@ -553,7 +553,7 @@ local function createESP(model, labelText)
     local bg = Instance.new("BillboardGui", model)
     bg.Name = "PlantESP"
     bg.Adornee = pp
-    bg.Size = UDim2.new(0, 120, 0, 48)   -- Increased height to accommodate 3 lines
+    bg.Size = UDim2.new(0, 200, 0, 24)   -- Wider to accommodate single line
     bg.StudsOffset = Vector3.new(0, 4, 0)
     bg.AlwaysOnTop = true
     
@@ -565,8 +565,8 @@ local function createESP(model, labelText)
     tl.TextStrokeTransparency = 0        -- 100% visible stroke
     tl.TextStrokeWidth = 4               -- Thicker stroke (4px)
     tl.Font = Enum.Font.FredokaOne
-    tl.TextSize = 12
-    tl.TextWrapped = true
+    tl.TextSize = 14                     -- Slightly larger font
+    tl.TextWrapped = false               -- Single line
     tl.RichText = true
     tl.Text = labelText
     espMap[model] = tl
@@ -666,15 +666,15 @@ local function update()
                 if type(weight) == "number" then
                     -- Format to one decimal and add kg
                     local weightText = string.format("%.1f kg", weight)
-                    label = label .. string.format("\n<font color='#FFFFFF'>%s</font>", weightText)
+                    label = label .. string.format(" - <font color='#FFFFFF'>%s</font>", weightText)
                 else
-                    label = label .. string.format("\n<font color='#FFFFFF'>%s</font>", tostring(weight))
+                    label = label .. string.format(" - <font color='#FFFFFF'>%s</font>", tostring(weight))
                 end
             end
             
             -- Add price in green
             if price then
-                label = label .. string.format('\n<font color="rgb(80,255,80)">%s</font>', tostring(price))
+                label = label .. string.format(' - <font color="rgb(80,255,80)">%s</font>', tostring(price))
             end
 
             local espLabel = createESP(model, label)
