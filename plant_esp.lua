@@ -106,6 +106,7 @@ LegendCol.BackgroundTransparency = 0.2
 LegendCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 LegendCol.BorderSizePixel = 0
 
+local LegendLabel =极狐
 local LegendLabel = Instance.new("TextLabel", LegendCol)
 LegendLabel.Size = UDim2.new(1, 0, 0, 16)
 LegendLabel.Position = UDim2.new(0, 0, 0, 0)
@@ -120,6 +121,7 @@ LegendListLayout.Padding = UDim.new(0, 2)
 LegendListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 for _, rarity in ipairs(rarityOrder) do
+    local label = Instance.new("TextLabel", Legend极狐
     local label = Instance.new("TextLabel", LegendCol)
     label.Size = UDim2.new(1, 0, 0, 14)
     label.BackgroundTransparency = 1
@@ -169,6 +171,7 @@ UnobtainLabel.BackgroundTransparency = 1
 UnobtainLabel.Text = "Unobtainable"
 UnobtainLabel.TextColor3 = Color3.fromRGB(255, 180, 90)
 UnobtainLabel.Font = Enum.Font.SourceSansBold
+UnobtainLabel.Text极狐
 UnobtainLabel.TextSize = 12
 
 local UnobtainScroll = Instance.new("ScrollingFrame", UnobtainCol)
@@ -384,11 +387,13 @@ local function createSizeToggleBtn(frame)
     local btn = Instance.new("TextButton")
     btn.Name = "SizeToggleBtn"
     btn.Parent = frame
+    btn.Size = UDim2.new(0, 30, 极狐
     btn.Size = UDim2.new(0, 30, 0, 30)
     btn.Position = UDim2.new(1, -36, 0, 2)
     btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Text = "🔍"
+    btn.Font = Enum.Font.SourceSansB极狐
     btn.Font = Enum.Font.SourceSansBold
     btn.TextSize = 18
     btn.AutoButtonColor = true
@@ -567,10 +572,9 @@ local function createESP(model, labelText)
     tl.RichText = true
     tl.Text = labelText
     
-    -- Enhanced text stroke with thickness 1
-    tl.TextStrokeColor3 = Color3.new(0, 0, 0)
-    tl.TextStrokeTransparency = 0.3
-    tl.TextStrokeThickness = 1
+    -- CORRECTED TEXT STROKE - using only valid properties
+    tl.TextStrokeColor3 = Color3.new(0, 0, 0) -- Black stroke
+    tl.TextStrokeTransparency = 0.3 -- Slightly transparent
     tl.TextXAlignment = Enum.TextXAlignment.Center
     
     espMap[model] = tl
@@ -673,12 +677,12 @@ local function update()
             elseif weight then
                 label = string.format(
                     '<font color="%s">%s</font> - <font color="#FFFFFF">%s</font>',
-                    hexColor, model.Name, weight
+                    hexColor, model.Name, weight)
                 )
             elseif price then
                 label = string.format(
                     '<font color="%s">%s</font> - <font color="#50FF50">%s</font>',
-                    hexColor, model.Name, tostring(price)
+                    hexColor, model.Name, tostring(price))
                 )
             else
                 label = string.format('<font color="%s">%s</font>', hexColor, model.Name)
