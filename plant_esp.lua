@@ -3,11 +3,6 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local espMap = {}
 
--- Add required modules for price calculation
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Item_Module = require(ReplicatedStorage.Item_Module)
-local MutationHandler = require(ReplicatedStorage.Modules.MutationHandler)
-
 local cropCategories = {
     Obtainable = {
         Common = {"Carrot", "Strawberry"},
@@ -48,37 +43,30 @@ local rarityColors = {
     Prismatic = Color3.fromRGB(100,255,255),
 }
 
--- Plant value calculation function (from seller script)
-local function CalculatePlantValue(plantTool)
-    local Item_String = plantTool:FindFirstChild("Item_String")
-    if not Item_String then return 0 end
-    
-    local Variant = plantTool:FindFirstChild("Variant")
-    if not Variant then return 0 end
-    
-    local Weight = plantTool:FindFirstChild("Weight")
-    if not Weight then return 0 end
-    
-    local plantData = Item_Module.Return_Data(Item_String.Value)
-    if not plantData or #plantData < 3 then
-        warn("CalculatePlantValue | ItemData is invalid")
-        return 0
+local CalculatePlantValue = require(game:GetService("ReplicatedStorage").Modules.CalculatePlantValue)
+
+local function getCategorizedTypes()
+    local cropsByCategory = {}
+    for obtain, rarities in pairs(cropCategories) do
+        cropsByCategory[obtain] = {}
+        for rarity, _ in pairs(rarities) do
+            cropsByCategory[obtain][rarity] = {}
+        end
     end
-    
-    -- Calculate weight ratio (clamped to minimum 0.95)
-    local weightRatio = math.clamp(Weight.Value / plantData[2], 0.95, 100000000)
-    
-    -- Apply multipliers and calculate final value
-    return math.round((
-        plantData[3] * 
-        MutationHandler:CalcValueMulti(plantTool) * 
-        Item_Module.Return_Multiplier(Variant.Value)
-    ) * (weightRatio * weightRatio))
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") then
+            local info = cropSet[model.Name:lower()]
+            if info then
+                cropsByCategory[info.obtain][info.rarity][model.Name] = true
+            end
+        end
+    end
+    return cropsByCategory
 end
 
--- UI Sizes (adjusted for Infinite Sprinkler row)
-local normalSize = UDim2.new(0, 340, 0, 250) -- +30 height
-local compactSize = UDim2.new(0, 210, 0, 160) -- +30 height
+-- UI Sizes (adjusted for removal of Sprinkler row)
+local normalSize = UDim2.new(0, 340, 0, 220) -- Reduced height by 30
+local compactSize = UDim2.new(0, 210, 0, 130) -- Reduced height by 30
 local normalPos = UDim2.new(0, 10, 0, 60)
 local compactPos = UDim2.new(0, 10, 0, 20)
 
@@ -277,41 +265,10 @@ NearbyScroll.ScrollBarThickness = 2
 local NearbyListLayout = Instance.new("UIListLayout", NearbyScroll)
 NearbyListLayout.Padding = UDim.new(0, 1)
 
-local SprinklerFrame = Instance.new("Frame", Frame)
-SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
-SprinklerFrame.Position = UDim2.new(0, 65, 1, -28)
-SprinklerFrame.BackgroundTransparency = 0.3
-SprinklerFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-SprinklerFrame.BorderSizePixel = 0
-
-local SprinklerLabel = Instance.new("TextLabel", SprinklerFrame)
-SprinklerLabel.Size = UDim2.new(0.6, 0, 1, 0)
-SprinklerLabel.Position = UDim2.new(0, 4, 0, 0)
-SprinklerLabel.BackgroundTransparency = 1
-SprinklerLabel.Text = "Infinite Sprinkler"
-SprinklerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-SprinklerLabel.Font = Enum.Font.SourceSansBold
-SprinklerLabel.TextSize = 12
-SprinklerLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-local SprinklerToggleBtn = Instance.new("TextButton", SprinklerFrame)
-SprinklerToggleBtn.Size = UDim2.new(0, 50, 0, 18)
-SprinklerToggleBtn.Position = UDim2.new(1, -54, 0.5, -9)
-SprinklerToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-SprinklerToggleBtn.TextColor3 = Color3.new(1, 1, 1)
-SprinklerToggleBtn.Text = "OFF"
-SprinklerToggleBtn.Font = Enum.Font.SourceSansBold
-SprinklerToggleBtn.TextSize = 14
-SprinklerToggleBtn.AutoButtonColor = true
-SprinklerToggleBtn.BorderSizePixel = 0
-local corner = Instance.new("UICorner", SprinklerToggleBtn)
-corner.CornerRadius = UDim.new(0, 6)
-
 LegendCol.Parent = Frame
 ObtainCol.Parent = Frame
 UnobtainCol.Parent = Frame
 NearbyFrame.Parent = Frame
-SprinklerFrame.Parent = Frame
 
 local selectedTypes = {}
 
@@ -461,8 +418,6 @@ local function createSizeToggleBtn(frame)
             ObtainLabel.TextSize = 9
             UnobtainLabel.TextSize = 9
             NearbyLabel.TextSize = 8
-            SprinklerLabel.TextSize = 9
-            SprinklerToggleBtn.TextSize = 10
             ToggleBtn.TextSize = 16
             btn.TextSize = 14
 
@@ -493,8 +448,6 @@ local function createSizeToggleBtn(frame)
             ObtainLabel.TextSize = 12
             UnobtainLabel.TextSize = 12
             NearbyLabel.TextSize = 11
-            SprinklerLabel.TextSize = 12
-            SprinklerToggleBtn.TextSize = 14
             ToggleBtn.TextSize = 22
             btn.TextSize = 18
 
@@ -522,8 +475,6 @@ local function createSizeToggleBtn(frame)
             UnobtainCol.Position = UDim2.new(0, 135, 0, 22)
             NearbyFrame.Size = UDim2.new(0, 140, 0, 16)
             NearbyFrame.Position = UDim2.new(0, 65, 1, -36)
-            SprinklerFrame.Size = UDim2.new(0, 140, 0, 16)
-            SprinklerFrame.Position = UDim2.new(0, 65, 1, -18)
         else
             frame.Size = normalSize
             frame.Position = normalPos
@@ -533,8 +484,6 @@ local function createSizeToggleBtn(frame)
             UnobtainCol.Position = UDim2.new(0, 185, 0, 22)
             NearbyFrame.Size = UDim2.new(0, 275, 0, 24)
             NearbyFrame.Position = UDim2.new(0, 65, 1, -52)
-            SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
-            SprinklerFrame.Position = UDim2.new(0, 65, 1, -28)
         end
         updateTextSizes(compact)
     end)
@@ -647,24 +596,24 @@ local function update()
         for i = 1, math.min(#nearest, maxESP) do
             local model = nearest[i].model
             local weight
-            local price = 0
-            
-            -- Find weight value and calculate price
             for _, child in ipairs(model:GetChildren()) do
                 if child:IsA("NumberValue") and child.Name:lower():find("weight") then
                     weight = child.Value
-                    
-                    -- Calculate price using seller's logic
-                    price = CalculatePlantValue(model)
                     break
                 end
+            end
+            local price
+            if CalculatePlantValue and typeof(CalculatePlantValue) == "table" and CalculatePlantValue.Calculate then
+                price = CalculatePlantValue.Calculate(model)
+            elseif CalculatePlantValue and typeof(CalculatePlantValue) == "function" then
+                price = CalculatePlantValue(model)
             end
 
             local label = model.Name
             if weight then
                 label = label .. "\nWt.: " .. tostring(weight)
             end
-            if price > 0 then
+            if price then
                 label = label .. string.format('\n<font color="rgb(80,255,80)">Price: %s</font>', tostring(price))
             end
 
@@ -678,46 +627,6 @@ local function update()
     cleanup(validModels)
     updateNearbyPlants()
 end
-
-local infiniteSprinklerEnabled = false
-
-local function sprinklerAction()
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-
-    local range = 15
-    for _, model in ipairs(workspace:GetDescendants()) do
-        if model:IsA("Model") and cropSet[model.Name:lower()] then
-            local pp = getPP(model)
-            if pp then
-                local dist = (pp.Position - root.Position).Magnitude
-                if dist <= range then
-                    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                    local WaterEvent = ReplicatedStorage:FindFirstChild("WaterPlant")
-                    if WaterEvent and WaterEvent:IsA("RemoteEvent") then
-                        WaterEvent:FireServer(model)
-                    end
-                end
-            end
-        end
-    end
-end
-
-SprinklerToggleBtn.MouseButton1Click:Connect(function()
-    infiniteSprinklerEnabled = not infiniteSprinklerEnabled
-    SprinklerToggleBtn.Text = infiniteSprinklerEnabled and "ON" or "OFF"
-    SprinklerToggleBtn.BackgroundColor3 = infiniteSprinklerEnabled and Color3.fromRGB(80, 200, 80) or Color3.fromRGB(50, 50, 50)
-end)
-
-spawn(function()
-    while true do
-        if infiniteSprinklerEnabled then
-            sprinklerAction()
-        end
-        wait(3)
-    end
-end)
 
 spawn(function()
     while true do
