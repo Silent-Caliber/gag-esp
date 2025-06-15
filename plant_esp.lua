@@ -64,9 +64,9 @@ local function getCategorizedTypes()
     return cropsByCategory
 end
 
--- UI Sizes (adjusted for removal of Sprinkler row)
-local normalSize = UDim2.new(0, 340, 0, 220) -- Reduced height by 30
-local compactSize = UDim2.new(0, 210, 0, 130) -- Reduced height by 30
+-- UI Sizes (adjusted for input row)
+local normalSize = UDim2.new(0, 340, 0, 250) -- Increased height for inputs
+local compactSize = UDim2.new(0, 210, 0, 160) -- Increased height for inputs
 local normalPos = UDim2.new(0, 10, 0, 60)
 local compactPos = UDim2.new(0, 10, 0, 20)
 
@@ -78,7 +78,8 @@ ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 local Frame = Instance.new("Frame", ScreenGui)
 Frame.Size = normalSize
 Frame.Position = normalPos
-Frame.BackgroundTransparency = 1
+Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Frame.BackgroundTransparency = 0.3
 Frame.Active = true
 Frame.Draggable = true
 
@@ -99,7 +100,7 @@ Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 14
 
 local LegendCol = Instance.new("Frame", Frame)
-LegendCol.Size = UDim2.new(0, 65, 1, -22)
+LegendCol.Size = UDim2.new(0, 65, 0, 174) -- Adjusted height
 LegendCol.Position = UDim2.new(0, 0, 0, 22)
 LegendCol.BackgroundTransparency = 0.2
 LegendCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -128,67 +129,8 @@ for _, rarity in ipairs(rarityOrder) do
     label.TextSize = 12
 end
 
--- Add input boxes for maxDistance, maxESP, nearbyDistance under Prismatic label
-local inputLabels = {"Max Dist", "Max ESP", "Nearby Dist"}
-local inputVars = {"maxDistance", "maxESP", "nearbyDistance"}
-
-local maxDistance = 25
-local maxESP = 10
-local nearbyDistance = 15
-
-local inputValues = {maxDistance, maxESP, nearbyDistance}
-
-local inputBoxes = {}
-local inputLabelObjects = {}
-
-for i, labelName in ipairs(inputLabels) do
-    local yPos = (#rarityOrder * 16) + (i - 1) * 24 + 4
-
-    local label = Instance.new("TextLabel", LegendCol)
-    label.Size = UDim2.new(1, 0, 0, 16)
-    label.Position = UDim2.new(0, 0, 0, yPos)
-    label.BackgroundTransparency = 1
-    label.Text = labelName
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.Font = Enum.Font.SourceSansBold
-    label.TextSize = 12
-    label.TextXAlignment = Enum.TextXAlignment.Left
-
-    local box = Instance.new("TextBox", LegendCol)
-    box.Size = UDim2.new(1, 0, 0, 20)
-    box.Position = UDim2.new(0, 0, 0, yPos + 16)
-    box.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    box.TextColor3 = Color3.new(1, 1, 1)
-    box.Text = tostring(inputValues[i])
-    box.Font = Enum.Font.SourceSansBold
-    box.TextSize = 14
-    box.ClearTextOnFocus = false
-    box.TextStrokeTransparency = 0.5
-    box.TextWrapped = false
-    box.PlaceholderText = "Enter number"
-
-    box.FocusLost:Connect(function(enterPressed)
-        local val = tonumber(box.Text)
-        if val and val > 0 then
-            if inputVars[i] == "maxDistance" then
-                maxDistance = val
-            elseif inputVars[i] == "maxESP" then
-                maxESP = math.floor(val)
-            elseif inputVars[i] == "nearbyDistance" then
-                nearbyDistance = val
-            end
-            box.Text = tostring(val)
-        else
-            box.Text = tostring(inputValues[i])
-        end
-    end)
-
-    table.insert(inputBoxes, box)
-    table.insert(inputLabelObjects, label)
-end
-
 local ObtainCol = Instance.new("Frame", Frame)
-ObtainCol.Size = UDim2.new(0, 120, 1, -52)
+ObtainCol.Size = UDim2.new(0, 120, 0, 174) -- Adjusted height
 ObtainCol.Position = UDim2.new(0, 65, 0, 22)
 ObtainCol.BackgroundTransparency = 0.2
 ObtainCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -214,7 +156,7 @@ local ObtainListLayout = Instance.new("UIListLayout", ObtainScroll)
 ObtainListLayout.Padding = UDim.new(0, 1)
 
 local UnobtainCol = Instance.new("Frame", Frame)
-UnobtainCol.Size = UDim2.new(0, 120, 1, -52)
+UnobtainCol.Size = UDim2.new(0, 120, 0, 174) -- Adjusted height
 UnobtainCol.Position = UDim2.new(0, 185, 0, 22)
 UnobtainCol.BackgroundTransparency = 0.2
 UnobtainCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -241,7 +183,7 @@ UnobtainListLayout.Padding = UDim.new(0, 1)
 
 local NearbyFrame = Instance.new("Frame", Frame)
 NearbyFrame.Size = UDim2.new(0, 275, 0, 24)
-NearbyFrame.Position = UDim2.new(0, 65, 1, -52)
+NearbyFrame.Position = UDim2.new(0, 65, 1, -76) -- Moved up for inputs
 NearbyFrame.BackgroundTransparency = 0.3
 NearbyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 NearbyFrame.BorderSizePixel = 0
@@ -265,10 +207,68 @@ NearbyScroll.ScrollBarThickness = 2
 local NearbyListLayout = Instance.new("UIListLayout", NearbyScroll)
 NearbyListLayout.Padding = UDim.new(0, 1)
 
-LegendCol.Parent = Frame
-ObtainCol.Parent = Frame
-UnobtainCol.Parent = Frame
-NearbyFrame.Parent = Frame
+local InputFrame = Instance.new("Frame", Frame)
+InputFrame.Size = UDim2.new(0, 275, 0, 30)
+InputFrame.Position = UDim2.new(0, 65, 1, -42) -- Positioned below Nearby
+InputFrame.BackgroundTransparency = 0.3
+InputFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+InputFrame.BorderSizePixel = 0
+
+local maxDistance = 25
+local maxESP = 10
+local nearbyDistance = 15
+
+local inputLabels = {"Max Dist", "Max ESP", "Nearby Dist"}
+local inputVars = {"maxDistance", "maxESP", "nearbyDistance"}
+local inputValues = {maxDistance, maxESP, nearbyDistance}
+
+local inputBoxes = {}
+
+for i, labelName in ipairs(inputLabels) do
+    local colWidth = 275 / #inputLabels
+    local xPos = (i-1) * colWidth
+    
+    local label = Instance.new("TextLabel", InputFrame)
+    label.Size = UDim2.new(0, colWidth, 0, 12)
+    label.Position = UDim2.new(0, xPos, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = labelName
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 11
+    label.TextXAlignment = Enum.TextXAlignment.Center
+
+    local box = Instance.new("TextBox", InputFrame)
+    box.Size = UDim2.new(0, colWidth - 4, 0, 16)
+    box.Position = UDim2.new(0, xPos + 2, 0, 12)
+    box.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    box.TextColor3 = Color3.new(1, 1, 1)
+    box.Text = tostring(inputValues[i])
+    box.Font = Enum.Font.SourceSansBold
+    box.TextSize = 12
+    box.ClearTextOnFocus = false
+    box.TextStrokeTransparency = 0.5
+    box.TextWrapped = false
+    box.PlaceholderText = "Enter number"
+
+    box.FocusLost:Connect(function(enterPressed)
+        local val = tonumber(box.Text)
+        if val and val > 0 then
+            if inputVars[i] == "maxDistance" then
+                maxDistance = val
+            elseif inputVars[i] == "maxESP" then
+                maxESP = math.floor(val)
+            elseif inputVars[i] == "nearbyDistance" then
+                nearbyDistance = val
+            end
+            box.Text = tostring(val)
+        else
+            box.Text = tostring(inputValues[i])
+        end
+    end)
+    
+    table.insert(inputBoxes, box)
+end
 
 local selectedTypes = {}
 
@@ -331,7 +331,6 @@ spawn(function()
     end
 end)
 
--- Toggle UI Button (top left)
 local function createToggleBtn(screenGui, frame)
     if screenGui:FindFirstChild("ShowHideESPBtn") then
         screenGui.ShowHideESPBtn:Destroy()
@@ -375,7 +374,6 @@ end
 
 local ToggleBtn = createToggleBtn(ScreenGui, Frame)
 
--- UI Size Toggle Button (top right)
 local function createSizeToggleBtn(frame)
     if frame:FindFirstChild("SizeToggleBtn") then
         frame.SizeToggleBtn:Destroy()
@@ -400,95 +398,98 @@ local function createSizeToggleBtn(frame)
 
     local compact = false
 
-    local function updateTextSizes(compact)
-        if compact then
-            Title.TextSize = 10
-            LegendLabel.TextSize = 9
-            for _, child in ipairs(LegendCol:GetChildren()) do
-                if child:IsA("TextLabel") and child ~= LegendLabel then
-                    child.TextSize = 9
-                end
-            end
-            for i, label in ipairs(inputLabelObjects) do
-                label.TextSize = 9
-            end
-            for i, box in ipairs(inputBoxes) do
-                box.TextSize = 10
-            end
-            ObtainLabel.TextSize = 9
-            UnobtainLabel.TextSize = 9
-            NearbyLabel.TextSize = 8
-            ToggleBtn.TextSize = 16
-            btn.TextSize = 14
-
-            for _, b in ipairs(ObtainScroll:GetChildren()) do
-                if b:IsA("TextButton") then
-                    b.TextSize = 8
-                end
-            end
-            for _, b in ipairs(UnobtainScroll:GetChildren()) do
-                if b:IsA("TextButton") then
-                    b.TextSize = 8
-                end
-            end
-        else
-            Title.TextSize = 14
-            LegendLabel.TextSize = 12
-            for _, child in ipairs(LegendCol:GetChildren()) do
-                if child:IsA("TextLabel") and child ~= LegendLabel then
-                    child.TextSize = 12
-                end
-            end
-            for i, label in ipairs(inputLabelObjects) do
-                label.TextSize = 12
-            end
-            for i, box in ipairs(inputBoxes) do
-                box.TextSize = 14
-            end
-            ObtainLabel.TextSize = 12
-            UnobtainLabel.TextSize = 12
-            NearbyLabel.TextSize = 11
-            ToggleBtn.TextSize = 22
-            btn.TextSize = 18
-
-            for _, b in ipairs(ObtainScroll:GetChildren()) do
-                if b:IsA("TextButton") then
-                    b.TextSize = 10
-                end
-            end
-            for _, b in ipairs(UnobtainScroll:GetChildren()) do
-                if b:IsA("TextButton") then
-                    b.TextSize = 10
-                end
-            end
-        end
-    end
-
     btn.MouseButton1Click:Connect(function()
         compact = not compact
         if compact then
             frame.Size = compactSize
             frame.Position = compactPos
-            ObtainCol.Size = UDim2.new(0, 70, 1, -52)
+            ObtainCol.Size = UDim2.new(0, 70, 0, 124) -- Adjusted for compact
             ObtainCol.Position = UDim2.new(0, 65, 0, 22)
-            UnobtainCol.Size = UDim2.new(0, 70, 1, -52)
+            UnobtainCol.Size = UDim2.new(0, 70, 0, 124) -- Adjusted for compact
             UnobtainCol.Position = UDim2.new(0, 135, 0, 22)
             NearbyFrame.Size = UDim2.new(0, 140, 0, 16)
-            NearbyFrame.Position = UDim2.new(0, 65, 1, -36)
+            NearbyFrame.Position = UDim2.new(0, 65, 1, -60) -- Adjusted
+            InputFrame.Size = UDim2.new(0, 140, 0, 30)
+            InputFrame.Position = UDim2.new(0, 65, 1, -30) -- Adjusted
+            
+            -- Update text sizes for compact mode
+            Title.TextSize = 10
+            LegendLabel.TextSize = 9
+            ObtainLabel.TextSize = 9
+            UnobtainLabel.TextSize = 9
+            NearbyLabel.TextSize = 8
+            
+            for _, child in ipairs(LegendCol:GetChildren()) do
+                if child:IsA("TextLabel") and child ~= LegendLabel then
+                    child.TextSize = 9
+                end
+            end
+            
+            for _, child in ipairs(InputFrame:GetChildren()) do
+                if child:IsA("TextLabel") then
+                    child.TextSize = 8
+                elseif child:IsA("TextBox") then
+                    child.TextSize = 10
+                end
+            end
+            
+            for _, b in ipairs(ObtainScroll:GetChildren()) do
+                if b:IsA("TextButton") then
+                    b.TextSize = 8
+                end
+            end
+            
+            for _, b in ipairs(UnobtainScroll:GetChildren()) do
+                if b:IsA("TextButton") then
+                    b.TextSize = 8
+                end
+            end
         else
             frame.Size = normalSize
             frame.Position = normalPos
-            ObtainCol.Size = UDim2.new(0, 120, 1, -52)
+            ObtainCol.Size = UDim2.new(0, 120, 0, 174)
             ObtainCol.Position = UDim2.new(0, 65, 0, 22)
-            UnobtainCol.Size = UDim2.new(0, 120, 1, -52)
+            UnobtainCol.Size = UDim2.new(0, 120, 0, 174)
             UnobtainCol.Position = UDim2.new(0, 185, 0, 22)
             NearbyFrame.Size = UDim2.new(0, 275, 0, 24)
-            NearbyFrame.Position = UDim2.new(0, 65, 1, -52)
+            NearbyFrame.Position = UDim2.new(0, 65, 1, -76)
+            InputFrame.Size = UDim2.new(0, 275, 0, 30)
+            InputFrame.Position = UDim2.new(0, 65, 1, -42)
+            
+            -- Restore text sizes
+            Title.TextSize = 14
+            LegendLabel.TextSize = 12
+            ObtainLabel.TextSize = 12
+            UnobtainLabel.TextSize = 12
+            NearbyLabel.TextSize = 11
+            
+            for _, child in ipairs(LegendCol:GetChildren()) do
+                if child:IsA("TextLabel") and child ~= LegendLabel then
+                    child.TextSize = 12
+                end
+            end
+            
+            for _, child in ipairs(InputFrame:GetChildren()) do
+                if child:IsA("TextLabel") then
+                    child.TextSize = 11
+                elseif child:IsA("TextBox") then
+                    child.TextSize = 12
+                end
+            end
+            
+            for _, b in ipairs(ObtainScroll:GetChildren()) do
+                if b:IsA("TextButton") then
+                    b.TextSize = 10
+                end
+            end
+            
+            for _, b in ipairs(UnobtainScroll:GetChildren()) do
+                if b:IsA("TextButton") then
+                    b.TextSize = 10
+                end
+            end
         end
-        updateTextSizes(compact)
     end)
-
-    updateTextSizes(false)
 
     return btn
 end
