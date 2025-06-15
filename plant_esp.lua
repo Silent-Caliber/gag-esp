@@ -543,9 +543,10 @@ local function getPP(model)
     return nil
 end
 
-local function createESP(model, labelText)
+local function createESP(model, labelText, rarity)
     if espMap[model] then
         espMap[model].Text = labelText
+        espMap[model].TextColor3 = rarityColors[rarity] or Color3.new(1,1,1)
         return espMap[model]
     end
     local pp = getPP(model)
@@ -559,7 +560,7 @@ local function createESP(model, labelText)
     local tl = Instance.new("TextLabel", bg)
     tl.Size = UDim2.new(1, 0, 1, 0)
     tl.BackgroundTransparency = 1
-    tl.TextColor3 = Color3.new(1, 1, 1)
+    tl.TextColor3 = rarityColors[rarity] or Color3.new(1,1,1)
     tl.TextStrokeColor3 = Color3.new(0, 0, 0)
     tl.TextStrokeTransparency = 0.2
     tl.Font = Enum.Font.SourceSansBold
@@ -604,7 +605,8 @@ local function updateNearbyPlants()
         local label = Instance.new("TextLabel", NearbyScroll)
         label.Size = UDim2.new(1, -4, 0, 14)
         label.BackgroundTransparency = 1
-        local rarity = cropSet[entry.model.Name:lower()] and cropSet[entry.model.Name:lower()].rarity or "Common"
+        local cropInfo = cropSet[entry.model.Name:lower()]
+        local rarity = cropInfo and cropInfo.rarity or "Common"
         label.TextColor3 = rarityColors[rarity] or Color3.new(1,1,1)
         label.Font = Enum.Font.SourceSansBold
         label.TextSize = 10
@@ -645,16 +647,22 @@ local function update()
             elseif CalculatePlantValue and typeof(CalculatePlantValue) == "function" then
                 price = CalculatePlantValue(model)
             end
+            
+            -- Get crop rarity for coloring
+            local cropInfo = cropSet[model.Name:lower()]
+            local rarity = cropInfo and cropInfo.rarity or "Common"
 
             local label = model.Name
             if weight then
                 label = label .. "\nWt.: " .. tostring(weight)
             end
             if price then
+                -- Keep price green as before
                 label = label .. string.format('\n<font color="rgb(80,255,80)">Price: %s</font>', tostring(price))
             end
 
-            local espLabel = createESP(model, label)
+            -- Pass rarity to createESP
+            local espLabel = createESP(model, label, rarity)
             if espLabel then
                 espLabel.RichText = true
             end
