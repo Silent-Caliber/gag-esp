@@ -64,9 +64,9 @@ local function getCategorizedTypes()
     return cropsByCategory
 end
 
--- UI Sizes (adjusted for input row)
-local normalSize = UDim2.new(0, 340, 0, 250) -- Increased height for inputs
-local compactSize = UDim2.new(0, 210, 0, 160) -- Increased height for inputs
+-- UI Sizes (adjusted for perfect square in compact mode)
+local normalSize = UDim2.new(0, 340, 0, 250)
+local compactSize = UDim2.new(0, 160, 0, 160) -- Square size
 local normalPos = UDim2.new(0, 10, 0, 60)
 local compactPos = UDim2.new(0, 10, 0, 20)
 
@@ -100,7 +100,7 @@ Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 14
 
 local LegendCol = Instance.new("Frame", Frame)
-LegendCol.Size = UDim2.new(0, 65, 0, 174) -- Adjusted height
+LegendCol.Size = UDim2.new(0, 65, 0, 174)
 LegendCol.Position = UDim2.new(0, 0, 0, 22)
 LegendCol.BackgroundTransparency = 0.2
 LegendCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -130,7 +130,7 @@ for _, rarity in ipairs(rarityOrder) do
 end
 
 local ObtainCol = Instance.new("Frame", Frame)
-ObtainCol.Size = UDim2.new(0, 120, 0, 174) -- Adjusted height
+ObtainCol.Size = UDim2.new(0, 120, 0, 174)
 ObtainCol.Position = UDim2.new(0, 65, 0, 22)
 ObtainCol.BackgroundTransparency = 0.2
 ObtainCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -156,7 +156,7 @@ local ObtainListLayout = Instance.new("UIListLayout", ObtainScroll)
 ObtainListLayout.Padding = UDim.new(0, 1)
 
 local UnobtainCol = Instance.new("Frame", Frame)
-UnobtainCol.Size = UDim2.new(0, 120, 0, 174) -- Adjusted height
+UnobtainCol.Size = UDim2.new(0, 120, 0, 174)
 UnobtainCol.Position = UDim2.new(0, 185, 0, 22)
 UnobtainCol.BackgroundTransparency = 0.2
 UnobtainCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -183,7 +183,7 @@ UnobtainListLayout.Padding = UDim.new(0, 1)
 
 local NearbyFrame = Instance.new("Frame", Frame)
 NearbyFrame.Size = UDim2.new(0, 275, 0, 24)
-NearbyFrame.Position = UDim2.new(0, 65, 1, -76) -- Moved up for inputs
+NearbyFrame.Position = UDim2.new(0, 65, 1, -76)
 NearbyFrame.BackgroundTransparency = 0.3
 NearbyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 NearbyFrame.BorderSizePixel = 0
@@ -209,7 +209,7 @@ NearbyListLayout.Padding = UDim.new(0, 1)
 
 local InputFrame = Instance.new("Frame", Frame)
 InputFrame.Size = UDim2.new(0, 275, 0, 30)
-InputFrame.Position = UDim2.new(0, 65, 1, -42) -- Positioned below Nearby
+InputFrame.Position = UDim2.new(0, 65, 1, -42)
 InputFrame.BackgroundTransparency = 0.3
 InputFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 InputFrame.BorderSizePixel = 0
@@ -222,6 +222,7 @@ local inputLabels = {"Max Dist", "Max ESP", "Nearby Dist"}
 local inputVars = {"maxDistance", "maxESP", "nearbyDistance"}
 local inputValues = {maxDistance, maxESP, nearbyDistance}
 
+local inputLabelsTbl = {}
 local inputBoxes = {}
 
 for i, labelName in ipairs(inputLabels) do
@@ -237,6 +238,7 @@ for i, labelName in ipairs(inputLabels) do
     label.Font = Enum.Font.SourceSansBold
     label.TextSize = 11
     label.TextXAlignment = Enum.TextXAlignment.Center
+    table.insert(inputLabelsTbl, label)
 
     local box = Instance.new("TextBox", InputFrame)
     box.Size = UDim2.new(0, colWidth - 4, 0, 16)
@@ -401,16 +403,23 @@ local function createSizeToggleBtn(frame)
     btn.MouseButton1Click:Connect(function()
         compact = not compact
         if compact then
+            -- Square layout
             frame.Size = compactSize
             frame.Position = compactPos
-            ObtainCol.Size = UDim2.new(0, 70, 0, 124) -- Adjusted for compact
-            ObtainCol.Position = UDim2.new(0, 65, 0, 22)
-            UnobtainCol.Size = UDim2.new(0, 70, 0, 124) -- Adjusted for compact
-            UnobtainCol.Position = UDim2.new(0, 135, 0, 22)
-            NearbyFrame.Size = UDim2.new(0, 140, 0, 16)
-            NearbyFrame.Position = UDim2.new(0, 65, 1, -60) -- Adjusted
-            InputFrame.Size = UDim2.new(0, 140, 0, 30)
-            InputFrame.Position = UDim2.new(0, 65, 1, -30) -- Adjusted
+            
+            -- Adjust columns to fit square
+            LegendCol.Size = UDim2.new(0, 50, 0, 100)
+            LegendCol.Position = UDim2.new(0, 0, 0, 22)
+            ObtainCol.Size = UDim2.new(0, 50, 0, 100)
+            ObtainCol.Position = UDim2.new(0, 50, 0, 22)
+            UnobtainCol.Size = UDim2.new(0, 50, 0, 100)
+            UnobtainCol.Position = UDim2.new(0, 100, 0, 22)
+            
+            -- Move bottom frames to fit square
+            NearbyFrame.Size = UDim2.new(0, 150, 0, 18)
+            NearbyFrame.Position = UDim2.new(0, 0, 1, -38)
+            InputFrame.Size = UDim2.new(0, 150, 0, 16)
+            InputFrame.Position = UDim2.new(0, 0, 1, -20)
             
             -- Update text sizes for compact mode
             Title.TextSize = 10
@@ -425,12 +434,12 @@ local function createSizeToggleBtn(frame)
                 end
             end
             
-            for _, child in ipairs(InputFrame:GetChildren()) do
-                if child:IsA("TextLabel") then
-                    child.TextSize = 8
-                elseif child:IsA("TextBox") then
-                    child.TextSize = 10
-                end
+            for i, label in ipairs(inputLabelsTbl) do
+                label.TextSize = 8
+            end
+            
+            for i, box in ipairs(inputBoxes) do
+                box.TextSize = 10
             end
             
             for _, b in ipairs(ObtainScroll:GetChildren()) do
@@ -444,9 +453,24 @@ local function createSizeToggleBtn(frame)
                     b.TextSize = 8
                 end
             end
+            
+            -- Adjust input boxes to fit square
+            local colWidth = 150 / #inputLabels
+            for i, label in ipairs(inputLabelsTbl) do
+                label.Size = UDim2.new(0, colWidth, 0, 8)
+                label.Position = UDim2.new(0, (i-1)*colWidth, 0, 0)
+            end
+            
+            for i, box in ipairs(inputBoxes) do
+                box.Size = UDim2.new(0, colWidth - 4, 0, 12)
+                box.Position = UDim2.new(0, (i-1)*colWidth + 2, 0, 8)
+            end
         else
+            -- Normal layout
             frame.Size = normalSize
             frame.Position = normalPos
+            LegendCol.Size = UDim2.new(0, 65, 0, 174)
+            LegendCol.Position = UDim2.new(0, 0, 0, 22)
             ObtainCol.Size = UDim2.new(0, 120, 0, 174)
             ObtainCol.Position = UDim2.new(0, 65, 0, 22)
             UnobtainCol.Size = UDim2.new(0, 120, 0, 174)
@@ -469,12 +493,12 @@ local function createSizeToggleBtn(frame)
                 end
             end
             
-            for _, child in ipairs(InputFrame:GetChildren()) do
-                if child:IsA("TextLabel") then
-                    child.TextSize = 11
-                elseif child:IsA("TextBox") then
-                    child.TextSize = 12
-                end
+            for i, label in ipairs(inputLabelsTbl) do
+                label.TextSize = 11
+            end
+            
+            for i, box in ipairs(inputBoxes) do
+                box.TextSize = 12
             end
             
             for _, b in ipairs(ObtainScroll:GetChildren()) do
@@ -487,6 +511,18 @@ local function createSizeToggleBtn(frame)
                 if b:IsA("TextButton") then
                     b.TextSize = 10
                 end
+            end
+            
+            -- Restore input box positions
+            local colWidth = 275 / #inputLabels
+            for i, label in ipairs(inputLabelsTbl) do
+                label.Size = UDim2.new(0, colWidth, 0, 12)
+                label.Position = UDim2.new(0, (i-1)*colWidth, 0, 0)
+            end
+            
+            for i, box in ipairs(inputBoxes) do
+                box.Size = UDim2.new(0, colWidth - 4, 0, 16)
+                box.Position = UDim2.new(0, (i-1)*colWidth + 2, 0, 12)
             end
         end
     end)
