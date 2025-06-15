@@ -106,7 +106,6 @@ LegendCol.BackgroundTransparency = 0.2
 LegendCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 LegendCol.BorderSizePixel = 0
 
-local LegendLabel =极狐
 local LegendLabel = Instance.new("TextLabel", LegendCol)
 LegendLabel.Size = UDim2.new(1, 0, 0, 16)
 LegendLabel.Position = UDim2.new(0, 0, 0, 0)
@@ -121,7 +120,6 @@ LegendListLayout.Padding = UDim.new(0, 2)
 LegendListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 for _, rarity in ipairs(rarityOrder) do
-    local label = Instance.new("TextLabel", Legend极狐
     local label = Instance.new("TextLabel", LegendCol)
     label.Size = UDim2.new(1, 0, 0, 14)
     label.BackgroundTransparency = 1
@@ -171,7 +169,6 @@ UnobtainLabel.BackgroundTransparency = 1
 UnobtainLabel.Text = "Unobtainable"
 UnobtainLabel.TextColor3 = Color3.fromRGB(255, 180, 90)
 UnobtainLabel.Font = Enum.Font.SourceSansBold
-UnobtainLabel.Text极狐
 UnobtainLabel.TextSize = 12
 
 local UnobtainScroll = Instance.new("ScrollingFrame", UnobtainCol)
@@ -387,13 +384,11 @@ local function createSizeToggleBtn(frame)
     local btn = Instance.new("TextButton")
     btn.Name = "SizeToggleBtn"
     btn.Parent = frame
-    btn.Size = UDim2.new(0, 30, 极狐
     btn.Size = UDim2.new(0, 30, 0, 30)
     btn.Position = UDim2.new(1, -36, 0, 2)
     btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Text = "🔍"
-    btn.Font = Enum.Font.SourceSansB极狐
     btn.Font = Enum.Font.SourceSansBold
     btn.TextSize = 18
     btn.AutoButtonColor = true
@@ -558,7 +553,7 @@ local function createESP(model, labelText)
     local bg = Instance.new("BillboardGui", model)
     bg.Name = "PlantESP"
     bg.Adornee = pp
-    bg.Size = UDim2.new(0, 120, 0, 36)
+    bg.Size = UDim2.new(0, 200, 0, 16)
     bg.StudsOffset = Vector3.new(0, 4, 0)
     bg.AlwaysOnTop = true
     
@@ -567,14 +562,13 @@ local function createESP(model, labelText)
     tl.BackgroundTransparency = 1
     tl.TextColor3 = Color3.new(1, 1, 1)
     tl.Font = Enum.Font.FredokaOne
-    tl.TextSize = 12
-    tl.TextWrapped = true
+    tl.TextSize = 10
+    tl.TextWrapped = false
     tl.RichText = true
     tl.Text = labelText
     
-    -- CORRECTED TEXT STROKE - using only valid properties
-    tl.TextStrokeColor3 = Color3.new(0, 0, 0) -- Black stroke
-    tl.TextStrokeTransparency = 0.3 -- Slightly transparent
+    tl.TextStrokeColor3 = Color3.new(0, 0, 0)
+    tl.TextStrokeTransparency = 0.3
     tl.TextXAlignment = Enum.TextXAlignment.Center
     
     espMap[model] = tl
@@ -646,18 +640,14 @@ local function update()
             local weight
             for _, child in ipairs(model:GetChildren()) do
                 if child:IsA("NumberValue") and child.Name:lower():find("weight") then
-                    -- Format weight to 1 decimal with "kg" suffix
-                    weight = string.format("%.1f kg", child.Value)
+                    weight = string.format("%.1f", child.Value)
                     break
                 end
             end
             
-            -- Get crop rarity for coloring
             local cropInfo = cropSet[model.Name:lower()]
             local rarity = cropInfo and cropInfo.rarity or "Common"
             local color = rarityColors[rarity] or Color3.new(1,1,1)
-            
-            -- Convert color to hex for RichText
             local hexColor = string.format("#%02X%02X%02X", math.floor(color.r * 255), math.floor(color.g * 255), math.floor(color.b * 255))
             
             local price
@@ -667,25 +657,22 @@ local function update()
                 price = CalculatePlantValue(model)
             end
 
-            -- Construct aligned label in "Name - Weight - Price" format
+            -- Format: "CropName - Weight kg - Price"
             local label
             if weight and price then
                 label = string.format(
-                    '<font color="%s">%s</font> - <font color="#FFFFFF">%s</font> - <font color="#50FF50">%s</font>',
-                    hexColor, model.Name, weight, tostring(price)
-                )
+                    "<font color='%s'>%s</font> - %s kg - <font color='#50FF50'>%s</font>",
+                    hexColor, model.Name, weight, tostring(price))
             elseif weight then
                 label = string.format(
-                    '<font color="%s">%s</font> - <font color="#FFFFFF">%s</font>',
+                    "<font color='%s'>%s</font> - %s kg",
                     hexColor, model.Name, weight)
-                )
             elseif price then
                 label = string.format(
-                    '<font color="%s">%s</font> - <font color="#50FF50">%s</font>',
+                    "<font color='%s'>%s</font> - <font color='#50FF50'>%s</font>",
                     hexColor, model.Name, tostring(price))
-                )
             else
-                label = string.format('<font color="%s">%s</font>', hexColor, model.Name)
+                label = string.format("<font color='%s'>%s</font>", hexColor, model.Name)
             end
 
             local espLabel = createESP(model, label)
