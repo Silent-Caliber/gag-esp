@@ -65,8 +65,8 @@ local function getCategorizedTypes()
 end
 
 -- UI Sizes (adjusted for Infinite Sprinkler row)
-local normalSize = UDim2.new(0, 340, 0, 250) -- +30 height
-local compactSize = UDim2.new(0, 210, 0, 160) -- +30 height
+local normalSize = UDim2.new(0, 340, 0, 250)
+local compactSize = UDim2.new(0, 210, 0, 160)
 local normalPos = UDim2.new(0, 10, 0, 60)
 local compactPos = UDim2.new(0, 10, 0, 20)
 
@@ -128,7 +128,6 @@ for _, rarity in ipairs(rarityOrder) do
     label.TextSize = 12
 end
 
--- Add input boxes for maxDistance, maxESP, nearbyDistance under Prismatic label
 local inputLabels = {"Max Dist", "Max ESP", "Nearby Dist"}
 local inputVars = {"maxDistance", "maxESP", "nearbyDistance"}
 
@@ -210,9 +209,6 @@ ObtainScroll.CanvasSize = UDim2.new(0, 0, 0, 800)
 ObtainScroll.BackgroundTransparency = 1
 ObtainScroll.ScrollBarThickness = 4
 
-local ObtainListLayout = Instance.new("UIListLayout", ObtainScroll)
-ObtainListLayout.Padding = UDim.new(0, 1)
-
 local UnobtainCol = Instance.new("Frame", Frame)
 UnobtainCol.Size = UDim2.new(0, 120, 1, -52)
 UnobtainCol.Position = UDim2.new(0, 185, 0, 22)
@@ -235,10 +231,6 @@ UnobtainScroll.Position = UDim2.new(0, 0, 0, 16)
 UnobtainScroll.CanvasSize = UDim2.new(0, 0, 0, 800)
 UnobtainScroll.BackgroundTransparency = 1
 UnobtainScroll.ScrollBarThickness = 4
-
-local UnobtainListLayout = Instance.new("UIListLayout", UnobtainScroll)
-UnobtainListLayout.Padding = UDim.new(0, 1)
-
 local NearbyFrame = Instance.new("Frame", Frame)
 NearbyFrame.Size = UDim2.new(0, 275, 0, 24)
 NearbyFrame.Position = UDim2.new(0, 65, 1, -52)
@@ -261,9 +253,6 @@ NearbyScroll.Position = UDim2.new(0, 0, 0, 12)
 NearbyScroll.CanvasSize = UDim2.new(0, 0, 0, 100)
 NearbyScroll.BackgroundTransparency = 1
 NearbyScroll.ScrollBarThickness = 2
-
-local NearbyListLayout = Instance.new("UIListLayout", NearbyScroll)
-NearbyListLayout.Padding = UDim.new(0, 1)
 
 local SprinklerFrame = Instance.new("Frame", Frame)
 SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
@@ -302,237 +291,6 @@ NearbyFrame.Parent = Frame
 SprinklerFrame.Parent = Frame
 
 local selectedTypes = {}
-
-local function createToggles()
-    for _, child in ipairs(ObtainScroll:GetChildren()) do
-        if child:IsA("TextButton") then child:Destroy() end
-    end
-    for _, child in ipairs(UnobtainScroll:GetChildren()) do
-        if child:IsA("TextButton") then child:Destroy() end
-    end
-
-    local cropsByCategory = getCategorizedTypes()
-    for _, rarity in ipairs(rarityOrder) do
-        if cropCategories.Obtainable[rarity] then
-            for _, crop in ipairs(cropCategories.Obtainable[rarity]) do
-                if cropsByCategory.Obtainable[rarity][crop] then
-                    local btn = Instance.new("TextButton", ObtainScroll)
-                    btn.Size = UDim2.new(1, -4, 0, 14)
-                    btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
-                    btn.TextColor3 = Color3.new(1, 1, 1)
-                    btn.Text = "[OFF] " .. crop
-                    btn.AutoButtonColor = true
-                    btn.TextSize = 10
-                    btn.Font = Enum.Font.SourceSansBold
-                    btn.MouseButton1Click:Connect(function()
-                        selectedTypes[crop] = not selectedTypes[crop]
-                        btn.Text = (selectedTypes[crop] and "[ON] " or "[OFF] ") .. crop
-                    end)
-                end
-            end
-        end
-    end
-    for _, rarity in ipairs(rarityOrder) do
-        if cropCategories.Unobtainable[rarity] then
-            for _, crop in ipairs(cropCategories.Unobtainable[rarity]) do
-                if cropsByCategory.Unobtainable[rarity][crop] then
-                    local btn = Instance.new("TextButton", UnobtainScroll)
-                    btn.Size = UDim2.new(1, -4, 0, 14)
-                    btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
-                    btn.TextColor3 = Color3.new(1, 1, 1)
-                    btn.Text = "[OFF] " .. crop
-                    btn.AutoButtonColor = true
-                    btn.TextSize = 10
-                    btn.Font = Enum.Font.SourceSansBold
-                    btn.MouseButton1Click:Connect(function()
-                        selectedTypes[crop] = not selectedTypes[crop]
-                        btn.Text = (selectedTypes[crop] and "[ON] " or "[OFF] ") .. crop
-                    end)
-                end
-            end
-        end
-    end
-end
-
-createToggles()
-spawn(function()
-    while true do
-        wait(10)
-        createToggles()
-    end
-end)
-
--- Toggle UI Button (top left)
-local function createToggleBtn(screenGui, frame)
-    if screenGui:FindFirstChild("ShowHideESPBtn") then
-        screenGui.ShowHideESPBtn:Destroy()
-    end
-
-    local ToggleBtn = Instance.new("TextButton")
-    ToggleBtn.Name = "ShowHideESPBtn"
-    ToggleBtn.Parent = screenGui
-    ToggleBtn.Size = UDim2.new(0, 38, 0, 38)
-    ToggleBtn.Position = UDim2.new(0, 6, 0, 6)
-    ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
-    ToggleBtn.Text = "✖"
-    ToggleBtn.Font = Enum.Font.SourceSansBold
-    ToggleBtn.TextSize = 22
-    ToggleBtn.AutoButtonColor = true
-    ToggleBtn.BackgroundTransparency = 0.15
-    ToggleBtn.ZIndex = 100
-    ToggleBtn.BorderSizePixel = 0
-
-    local corner = Instance.new("UICorner", ToggleBtn)
-    corner.CornerRadius = UDim.new(1, 0)
-
-    local shadow = Instance.new("ImageLabel", ToggleBtn)
-    shadow.BackgroundTransparency = 1
-    shadow.Image = "rbxassetid://1316045217"
-    shadow.Size = UDim2.new(1.4, 0, 1.4, 0)
-    shadow.Position = UDim2.new(-0.2, 0, -0.2, 0)
-    shadow.ZIndex = 99
-
-    local uiVisible = true
-    frame.Visible = uiVisible
-
-    ToggleBtn.MouseButton1Click:Connect(function()
-        uiVisible = not uiVisible
-        frame.Visible = uiVisible
-        ToggleBtn.Text = uiVisible and "✖" or "⟳"
-    end)
-    return ToggleBtn
-end
-
-local ToggleBtn = createToggleBtn(ScreenGui, Frame)
-
--- UI Size Toggle Button (top right)
-local function createSizeToggleBtn(frame)
-    if frame:FindFirstChild("SizeToggleBtn") then
-        frame.SizeToggleBtn:Destroy()
-    end
-
-    local btn = Instance.new("TextButton")
-    btn.Name = "SizeToggleBtn"
-    btn.Parent = frame
-    btn.Size = UDim2.new(0, 30, 0, 30)
-    btn.Position = UDim2.new(1, -36, 0, 2)
-    btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Text = "🔍"
-    btn.Font = Enum.Font.SourceSansBold
-    btn.TextSize = 18
-    btn.AutoButtonColor = true
-    btn.BackgroundTransparency = 0.13
-    btn.ZIndex = 101
-    btn.BorderSizePixel = 0
-    local corner = Instance.new("UICorner", btn)
-    corner.CornerRadius = UDim.new(1, 0)
-
-    local compact = false
-
-    local function updateTextSizes(compact)
-        if compact then
-            Title.TextSize = 10
-            LegendLabel.TextSize = 9
-            for _, child in ipairs(LegendCol:GetChildren()) do
-                if child:IsA("TextLabel") and child ~= LegendLabel then
-                    child.TextSize = 9
-                end
-            end
-            for i, label in ipairs(inputLabelObjects) do
-                label.TextSize = 9
-            end
-            for i, box in ipairs(inputBoxes) do
-                box.TextSize = 10
-            end
-            ObtainLabel.TextSize = 9
-            UnobtainLabel.TextSize = 9
-            NearbyLabel.TextSize = 8
-            SprinklerLabel.TextSize = 9
-            SprinklerToggleBtn.TextSize = 10
-            ToggleBtn.TextSize = 16
-            btn.TextSize = 14
-
-            for _, b in ipairs(ObtainScroll:GetChildren()) do
-                if b:IsA("TextButton") then
-                    b.TextSize = 8
-                end
-            end
-            for _, b in ipairs(UnobtainScroll:GetChildren()) do
-                if b:IsA("TextButton") then
-                    b.TextSize = 8
-                end
-            end
-        else
-            Title.TextSize = 14
-            LegendLabel.TextSize = 12
-            for _, child in ipairs(LegendCol:GetChildren()) do
-                if child:IsA("TextLabel") and child ~= LegendLabel then
-                    child.TextSize = 12
-                end
-            end
-            for i, label in ipairs(inputLabelObjects) do
-                label.TextSize = 12
-            end
-            for i, box in ipairs(inputBoxes) do
-                box.TextSize = 14
-            end
-            ObtainLabel.TextSize = 12
-            UnobtainLabel.TextSize = 12
-            NearbyLabel.TextSize = 11
-            SprinklerLabel.TextSize = 12
-            SprinklerToggleBtn.TextSize = 14
-            ToggleBtn.TextSize = 22
-            btn.TextSize = 18
-
-            for _, b in ipairs(ObtainScroll:GetChildren()) do
-                if b:IsA("TextButton") then
-                    b.TextSize = 10
-                end
-            end
-            for _, b in ipairs(UnobtainScroll:GetChildren()) do
-                if b:IsA("TextButton") then
-                    b.TextSize = 10
-                end
-            end
-        end
-    end
-
-    btn.MouseButton1Click:Connect(function()
-        compact = not compact
-        if compact then
-            frame.Size = compactSize
-            frame.Position = compactPos
-            ObtainCol.Size = UDim2.new(0, 70, 1, -52)
-            ObtainCol.Position = UDim2.new(0, 65, 0, 22)
-            UnobtainCol.Size = UDim2.new(0, 70, 1, -52)
-            UnobtainCol.Position = UDim2.new(0, 135, 0, 22)
-            NearbyFrame.Size = UDim2.new(0, 140, 0, 16)
-            NearbyFrame.Position = UDim2.new(0, 65, 1, -36)
-            SprinklerFrame.Size = UDim2.new(0, 140, 0, 16)
-            SprinklerFrame.Position = UDim2.new(0, 65, 1, -18)
-        else
-            frame.Size = normalSize
-            frame.Position = normalPos
-            ObtainCol.Size = UDim2.new(0, 120, 1, -52)
-            ObtainCol.Position = UDim2.new(0, 65, 0, 22)
-            UnobtainCol.Size = UDim2.new(0, 120, 1, -52)
-            UnobtainCol.Position = UDim2.new(0, 185, 0, 22)
-            NearbyFrame.Size = UDim2.new(0, 275, 0, 24)
-            NearbyFrame.Position = UDim2.new(0, 65, 1, -52)
-            SprinklerFrame.Size = UDim2.new(0, 275, 0, 24)
-            SprinklerFrame.Position = UDim2.new(0, 65, 1, -28)
-        end
-        updateTextSizes(compact)
-    end)
-
-    updateTextSizes(false)
-
-    return btn
-end
-
-local SizeToggleBtn = createSizeToggleBtn(Frame)
 
 local function getPP(model)
     if model.PrimaryPart then return model.PrimaryPart end
@@ -641,11 +399,25 @@ local function update()
                     break
                 end
             end
-            local price
-            if CalculatePlantValue and typeof(CalculatePlantValue) == "table" and CalculatePlantValue.Calculate then
-                price = CalculatePlantValue.Calculate(model)
-            elseif CalculatePlantValue and typeof(CalculatePlantValue) == "function" then
-                price = CalculatePlantValue(model)
+
+            local price = 0
+            if CalculatePlantValue then
+                if typeof(CalculatePlantValue) == "table" and typeof(CalculatePlantValue.Calculate) == "function" then
+                    price = CalculatePlantValue.Calculate(model)
+                elseif typeof(CalculatePlantValue) == "function" then
+                    price = CalculatePlantValue(model)
+                end
+            end
+
+            if (not price or price == 0) and model:GetAttribute("Price") then
+                price = model:GetAttribute("Price")
+            elseif (not price or price == 0) then
+                for _, child in ipairs(model:GetChildren()) do
+                    if child:IsA("NumberValue") and child.Name:lower():find("price") then
+                        price = child.Value
+                        break
+                    end
+                end
             end
 
             local label = model.Name
