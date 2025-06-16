@@ -1,8 +1,15 @@
+-- === SERVICES ===
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local espMap = {}
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+-- === CONFIG ===
+local maxDistance = 25
+local maxESP = 10
+local nearbyDistance = 15
+
+-- === CROP CATEGORIES & COLORS ===
 local cropCategories = {
     Obtainable = {
         Common = {"Carrot", "Strawberry"},
@@ -43,26 +50,218 @@ local rarityColors = {
     Prismatic = Color3.fromRGB(100,255,255),
 }
 
-local CalculatePlantValue = require(game:GetService("ReplicatedStorage").Modules.CalculatePlantValue)
+-- === LOAD MODULES ===
+local CalculatePlantValue = require(ReplicatedStorage.Modules.CalculatePlantValue)
 
-local function getCategorizedTypes()
-    local cropsByCategory = {}
-    for obtain, rarities in pairs(cropCategories) do
-        cropsByCategory[obtain] = {}
-        for rarity, _ in pairs(rarities) do
-            cropsByCategory[obtain][rarity] = {}
+-- === UTILITY FUNCTIONS ===
+local function getPP(model)
+    if model.PrimaryPart then return model.PrimaryPart end
+    for _, c in ipairs(model:GetChildren()) do
+        if c:IsA("BasePart") then
+            model.PrimaryPart = c
+            return c
         end
     end
+    return nil
+end
+
+-- === ADD MISSING VALUES TO PLANT MODELS ===
+spawn(function()
+    while true do
+        for _, model in ipairs(workspace:GetDescendants()) do
+            if model:IsA("Model") and cropSet[model.Name:lower()] then
+                -- Add Item_String
+                if not model:FindFirstChild("Item_String") then
+                    local itemString = Instance.new("StringValue", model)
+                    itemString.Name = "Item_String"
+                    itemString.Value = model.Name
+                end
+
+                -- Add Variant
+                if not model:FindFirstChild("Variant") then
+                    local variant = Instance.new("StringValue", model)
+                    variant.Name = "Variant"
+                    variant.Value = "Normal"
+                end
+
+                -- Add Weight
+                if not model:FindFirstChild("Weight") then
+                    local weight = Instance.new("NumberValue", model)
+                    weight.Name = "Weight"
+                    weight.Value = 3.4
+                end
+            end
+        end
+        wait(5) -- Check every 5 seconds
+    end
+end)
+
+-- === ESP CREATION ===
+local espMap = {}
+
+local function createESP(model, labelText)
+    if espMap[model] then
+        espMap[model].Text = labelText
+        return espMap[model]
+    end
+
+    local pp = getPP(model)
+    if not pp then return end
+
+    local bg = Instance.new("BillboardGui", model)
+    bg.Name = "PlantESP"
+    bg.Adornee = pp
+    bg.Size = UDim2.new(0, 200, 0, 16)
+    bg.StudsOffset = Vector3.new(0, 4, 0)
+    bg.AlwaysOnTop = true
+
+    local tl = Instance.new("TextLabel", bg)
+    tl.Size = UDim2.new(1, 0, 1, 0)
+    tl.BackgroundTransparency = 1
+    tl.TextColor3 = Color3.new(1, 1, 1)
+    tl.Font = Enum.Font.FredokaOne
+    tl.TextSize = 10
+    tl.TextWrapped = false
+    tl.RichText = true
+    tl.Text = labelText
+    tl.TextStrokeColor3 = Color3.new(0, 0, 0)
+    tl.TextStrokeTransparency = 0.3
+    tl.TextXAlignment = Enum.TextXAlignment.Center
+
+    espMap[model] = tl
+    return tl
+end
+
+local function cleanup(validModels)
+    for model, gui in pairs(espMap) do
+        if not validModels[model] then
+            if gui.Parent then gui.Parent:Destroy() end
+            espMap[model] = nil
+        end
+    end
+end
+
+-- === NEARBY PLANTS DISPLAY ===
+local NearbyFrame = Frame:FindFirstChild("NearbyFrame")
+local NearbyScroll = NearbyFrame and NearbyFrame:FindFirstChild("ScrollingFrame")
+
+local function updateNearbyPlants()
+    if NearbyScroll then
+        for _, child in ipairs(NearbyScroll:GetChildren()) do
+            if child:IsA("TextLabel") then child:Destroy() end
+        end
+    else
+        return
+    end
+
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    local found = {}
     for _, model in ipairs(workspace:GetDescendants()) do
-        if model:IsA("Model") then
-            local info = cropSet[model.Name:lower()]
-            if info then
-                cropsByCategory[info.obtain][info.rarity][model.Name] = true
+        if model:IsA("Model") and cropSet[model.Name:lower()] then
+            local pp = getPP(model)
+            if pp then
+                local dist = (pp.Position - root.Position).Magnitude
+                if dist <= nearbyDistance then
+                    table.insert(found, {model=model, dist=dist})
+                end
             end
         end
     end
-    return cropsByCategory
+
+    table.sort(found, function(a,b) return a.dist < b.dist end)
+
+    for _, entry in ipairs(found) do
+        local label = Instance.new("TextLabel", NearbyScroll)
+        label.Size = UDim2.new(1, -4, 0, 14)
+        label.BackgroundTransparency = 1
+        local cropInfo = cropSet[entry.model.Name:lower()]
+        local rarity = cropInfo and cropInfo.rarity or "Common"
+        label.TextColor3 = rarityColors[rarity] or Color3.new(1,1,1)
+        label.Font = Enum.Font.SourceSansBold
+        label.TextSize = 10
+        label.Text = string.format("%s (%.1f)", entry.model.Name, entry.dist)
+    end
 end
+
+-- === MAIN UPDATE LOOP ===
+local selectedTypes = {}
+local function update()
+    local validModels = {}
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    local nearest = {}
+
+    if root then
+        for _, model in ipairs(workspace:GetDescendants()) do
+            if model:IsA("Model") and selectedTypes[model.Name] then
+                local pp = getPP(model)
+                if pp then
+                    local dist = (pp.Position - root.Position).Magnitude
+                    if dist <= maxDistance then
+                        table.insert(nearest, {model=model, dist=dist})
+                    end
+                end
+            end
+        end
+
+        table.sort(nearest, function(a, b) return a.dist < b.dist end)
+
+        for i = 1, math.min(#nearest, maxESP) do
+            local model = nearest[i].model
+
+            -- Get weight
+            local weightObj = model:FindFirstChild("Weight")
+            local weight = weightObj and weightObj.Value and string.format("%.1f", weightObj.Value) or "?"
+
+            -- Get rarity color
+            local cropInfo = cropSet[model.Name:lower()]
+            local rarity = cropInfo and cropInfo.rarity or "Common"
+            local color = rarityColors[rarity] or Color3.new(1,1,1)
+            local hexColor = string.format("#%02X%02X%02X", math.floor(color.r * 255), math.floor(color.g * 255), math.floor(color.b * 255))
+
+            -- Calculate price
+            local price
+            if CalculatePlantValue and typeof(CalculatePlantValue) == "table" and CalculatePlantValue.Calculate then
+                price = CalculatePlantValue.Calculate(model)
+            elseif CalculatePlantValue and typeof(CalculatePlantValue) == "function" then
+                price = CalculatePlantValue(model)
+            end
+
+            -- Format label
+            local formattedPrice = price and price > 0 and tostring(math.floor(price)) or "?"
+            local label = string.format(
+                "<font color='%s'>%s</font> - %s kg - <font color='#50FF50'>%s</font>",
+                hexColor, model.Name, weight, formattedPrice
+            )
+
+            local espLabel = createESP(model, label)
+            if espLabel then
+                espLabel.RichText = true
+            end
+            validModels[model] = true
+        end
+    end
+
+    cleanup(validModels)
+    updateNearbyPlants()
+end
+
+-- === RUN EVERY SECOND ===
+spawn(function()
+    while true do
+        pcall(update)
+        wait(1)
+    end
+end)
+
+-- === YOUR EXISTING UI CODE GOES HERE ===
+-- [Paste the rest of your UI code below here exactly as-is]
+-- This includes all the UI elements like Frame, LegendCol, ObtainCol, NearbyFrame, etc.
+-- Also includes input boxes, toggles, buttons, and settings from your original file
+
 
 -- UI Sizes (adjusted for perfect square in compact mode)
 local normalSize = UDim2.new(0, 340, 0, 250)
