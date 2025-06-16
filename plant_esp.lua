@@ -1,6 +1,7 @@
 -- === SERVICES ===
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -13,12 +14,12 @@ local nearbyDistance = 15
 local cropCategories = {
     Obtainable = {
         Common = {"Carrot", "Strawberry"},
-        Uncommon = {"Blueberry", "Manuka Flower", "Orange Tulip", "Rose", "Lavender", "Crocus"},
-        Rare = {"Tomato", "Corn", "Dandelion", "Daffodil", "Nectarshade", "Raspberry", "Foxglove", "Succulent", "Bee Balm"},
-        Legendary = {"Watermelon", "Pumpkin", "Apple", "Bamboo", "Lilac", "Lumira", "Violet Corn", "Nectar Thorn"},
-        Mythical = {"Coconut", "Cactus", "Dragon Fruit", "Honeysuckle", "Mango", "Nectarine", "Peach", "Pineapple", "Pink Lily", "Purple Dahlia", "Bendboo", "Suncoil", "Cocovine"},
-        Divine = {"Grape", "Mushroom", "Pepper", "Cacao", "Hive Fruit", "Sunflower", "Dragon Pepper"},
-        Prismatic = {"Beanstalk", "Ember Lily", "Sugar Apple"},
+        Uncommon = {"Blueberry", "Manuka Flower", "Orange Tulip", "Rose", "Lavender"},
+        Rare = {"Tomato", "Corn", "Dandelion", "Daffodil", "Nectarshade", "Raspberry", "Foxglove"},
+        Legendary = {"Watermelon", "Pumpkin", "Apple", "Bamboo", "Lilac", "Lumira"},
+        Mythical = {"Coconut", "Cactus", "Dragon Fruit", "Honeysuckle", "Mango", "Nectarine", "Peach", "Pineapple", "Pink Lily", "Purple Dahlia"},
+        Divine = {"Grape", "Mushroom", "Pepper", "Cacao", "Hive Fruit", "Sunflower"},
+        Prismatic = {"Beanstalk", "Ember Lily"},
     },
     Unobtainable = {
         Common = {"Chocolate Carrot"},
@@ -293,14 +294,50 @@ TitleBar.BackgroundTransparency = 0.25
 TitleBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TitleBar.BorderSizePixel = 0
 
+-- Discord Button
+local DiscordBtn = Instance.new("TextButton", TitleBar)
+DiscordBtn.Size = UDim2.new(0, 60, 0, 18)
+DiscordBtn.Position = UDim2.new(0, 4, 0.5, -9)
+DiscordBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+DiscordBtn.Text = "DISCORD"
+DiscordBtn.TextColor3 = Color3.new(1, 1, 1)
+DiscordBtn.Font = Enum.Font.SourceSansBold
+DiscordBtn.TextSize = 10
+DiscordBtn.AutoButtonColor = false
+DiscordBtn.BorderSizePixel = 2
+DiscordBtn.BorderColor3 = Color3.fromRGB(255, 50, 50)
+
+local DiscordCorner = Instance.new("UICorner", DiscordBtn)
+DiscordCorner.CornerRadius = UDim.new(0, 4)
+
+DiscordBtn.MouseButton1Click:Connect(function()
+    local success, err = pcall(function()
+        local discordUrl = "https://discord.gg/JxEjAtdgWD"
+        HttpService:GetAsync(discordUrl, true)
+    end)
+    if not success then
+        warn("Couldn't open Discord link: " .. err)
+    end
+end)
+
+DiscordBtn.MouseEnter:Connect(function()
+    DiscordBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+end)
+
+DiscordBtn.MouseLeave:Connect(function()
+    DiscordBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+end)
+
+-- Title (adjusted position)
 local Title = Instance.new("TextLabel", TitleBar)
-Title.Size = UDim2.new(1, 0, 1, 0)
-Title.Position = UDim2.new(0, 0, 0, 0)
+Title.Size = UDim2.new(1, -70, 1, 0)
+Title.Position = UDim2.new(0, 65, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "PUNK TEAM Grow a Garden ESP"
+Title.Text = "PUNK TEAM Grow A Garden ESP"
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 14
+Title.TextXAlignment = Enum.TextXAlignment.Left
 
 -- LegendCol (Rarity Colors)
 local LegendCol = Instance.new("Frame", Frame)
@@ -644,8 +681,15 @@ local function createSizeToggleBtn(frame)
             NearbyFrame.Position = UDim2.new(0, 0, 1, -38)
             InputFrame.Size = UDim2.new(0, 150, 0, 16)
             InputFrame.Position = UDim2.new(0, 0, 1, -20)
-
+            
+            -- Adjust Discord button for compact mode
+            DiscordBtn.Size = UDim2.new(0, 50, 0, 15)
+            DiscordBtn.TextSize = 8
+            DiscordBtn.Position = UDim2.new(0, 2, 0.5, -7.5)
             Title.TextSize = 10
+            Title.Position = UDim2.new(0, 52, 0, 0)
+            Title.Size = UDim2.new(1, -55, 1, 0)
+
             LegendLabel.TextSize = 9
             ObtainLabel.TextSize = 9
             UnobtainLabel.TextSize = 9
@@ -695,8 +739,15 @@ local function createSizeToggleBtn(frame)
             NearbyFrame.Position = UDim2.new(0, 65, 1, -76)
             InputFrame.Size = UDim2.new(0, 275, 0, 30)
             InputFrame.Position = UDim2.new(0, 65, 1, -42)
-
+            
+            -- Restore Discord button to normal size
+            DiscordBtn.Size = UDim2.new(0, 60, 0, 18)
+            DiscordBtn.TextSize = 10
+            DiscordBtn.Position = UDim2.new(0, 4, 0.5, -9)
             Title.TextSize = 14
+            Title.Position = UDim2.new(0, 65, 0, 0)
+            Title.Size = UDim2.new(1, -70, 1, 0)
+
             LegendLabel.TextSize = 12
             ObtainLabel.TextSize = 12
             UnobtainLabel.TextSize = 12
