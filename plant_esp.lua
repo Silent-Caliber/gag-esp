@@ -45,25 +45,6 @@ local rarityColors = {
 
 local CalculatePlantValue = require(game:GetService("ReplicatedStorage").Modules.CalculatePlantValue)
 
-local function getCategorizedTypes()
-    local cropsByCategory = {}
-    for obtain, rarities in pairs(cropCategories) do
-        cropsByCategory[obtain] = {}
-        for rarity, _ in pairs(rarities) do
-            cropsByCategory[obtain][rarity] = {}
-        end
-    end
-    for _, model in ipairs(workspace:GetDescendants()) do
-        if model:IsA("Model") then
-            local info = cropSet[model.Name:lower()]
-            if info then
-                cropsByCategory[info.obtain][info.rarity][model.Name] = true
-            end
-        end
-    end
-    return cropsByCategory
-end
-
 -- UI Sizes
 local normalSize = UDim2.new(0, 340, 0, 250)
 local compactSize = UDim2.new(0, 160, 0, 160)
@@ -520,6 +501,25 @@ end
 
 local SizeToggleBtn = createSizeToggleBtn(Frame)
 
+local function getCategorizedTypes()
+    local cropsByCategory = {}
+    for obtain, rarities in pairs(cropCategories) do
+        cropsByCategory[obtain] = {}
+        for rarity, _ in pairs(rarities) do
+            cropsByCategory[obtain][rarity] = {}
+        end
+    end
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") then
+            local info = cropSet[model.Name:lower()]
+            if info then
+                cropsByCategory[info.obtain][info.rarity][model.Name] = true
+            end
+        end
+    end
+    return cropsByCategory
+end
+
 local function getPP(model)
     if model.PrimaryPart then return model.PrimaryPart end
     for _,c in ipairs(model:GetChildren()) do
@@ -604,30 +604,79 @@ local function updateNearbyPlants()
     end
 end
 
--- Fixed plant value calculation
+-- GUARANTEED VALUE CALCULATION
 local function getPlantValue(model)
-    -- Check if model has required attributes
-    local itemString = model:GetAttribute("Item_String")
-    local variant = model:GetAttribute("Variant")
-    local weight = model:GetAttribute("Weight")
+    -- Get required properties
+    local itemString = model:GetAttribute("Item_String") or 
+                      (model:FindFirstChild("Item_String") and model.Item_String.Value) or 
+                      model.Name
     
-    if not itemString or not variant or not weight then
-        -- Try to get from children as fallback
-        itemString = model:FindFirstChild("Item_String") and model.Item_String.Value
-        variant = model:FindFirstChild("Variant") and model.Variant.Value
-        weight = model:FindFirstChild("Weight") and model.Weight.Value
-        
-        if not itemString or not variant or not weight then
-            return "N/A"
-        end
+    local variant = model:GetAttribute("Variant") or 
+                   (model:FindFirstChild("Variant") and model.Variant.Value) or 
+                   1
+    
+    local weight = model:GetAttribute("Weight") or 
+                  (model:FindFirstChild("Weight") and model.Weight.Value) or 
+                  1
+    
+    -- Get optional properties
+    local mutation = model:GetAttribute("Mutation") or 
+                    (model:FindFirstChild("Mutation") and model.Mutation.Value) or 
+                    nil
+    
+    local nectar = model:GetAttribute("Nectar") or 
+                  (model:FindFirstChild("Nectar") and model.Nectar.Value) or 
+                  nil
+    
+    local nectarLevel = model:GetAttribute("NectarLevel") or 
+                       (model:FindFirstChild("NectarLevel") and model.NectarLevel.Value) or 
+                       nil
+    
+    -- Create temporary model with all required properties
+    local tempModel = Instance.new("Model")
+    
+    -- Add required values
+    local itemValue = Instance.new("StringValue")
+    itemValue.Name = "Item_String"
+    itemValue.Value = itemString
+    itemValue.Parent = tempModel
+    
+    local variantValue = Instance.new("StringValue")
+    variantValue.Name = "Variant"
+    variantValue.Value = tostring(variant)
+    variantValue.Parent = tempModel
+    
+    local weightValue = Instance.new("NumberValue")
+    weightValue.Name = "Weight"
+    weightValue.Value = tonumber(weight)
+    weightValue.Parent = tempModel
+    
+    -- Add optional attributes
+    if mutation then
+        tempModel:SetAttribute("Mutation", mutation)
     end
     
-    -- Calculate value using game's function
+    if nectar then
+        tempModel:SetAttribute("Nectar", nectar)
+    end
+    
+    if nectarLevel then
+        tempModel:SetAttribute("NectarLevel", nectarLevel)
+    end
+    
+    -- Calculate value
     local success, value = pcall(function()
-        return CalculatePlantValue(model)
+        return CalculatePlantValue(tempModel)
     end)
     
-    return success and tostring(value) or "Err"
+    -- Clean up
+    tempModel:Destroy()
+    
+    if success then
+        return tostring(value)
+    else
+        return "Err"
+    end
 end
 
 local function update()
