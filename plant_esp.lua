@@ -210,7 +210,13 @@ local function update()
 
     if root then
         for _, model in ipairs(workspace:GetDescendants()) do
-            if model:IsA("Model") and selectedTypes[model.Name] then
+            -- Only process models with required properties
+            if model:IsA("Model") 
+                and selectedTypes[model.Name] 
+                and model:FindFirstChild("Item_String") 
+                and model:FindFirstChild("Variant") 
+                and model:FindFirstChild("Weight") then
+
                 local pp = getPP(model)
                 if pp then
                     local dist = (pp.Position - root.Position).Magnitude
@@ -228,7 +234,7 @@ local function update()
 
             -- Get weight
             local weightObj = model:FindFirstChild("Weight")
-            local weight = weightObj and weightObj.Value and string.format("%.1f", weightObj.Value) or "?"
+            local weight = weightObj and string.format("%.1f", weightObj.Value) or "?"
 
             -- Get rarity color
             local cropInfo = cropSet[model.Name:lower()]
@@ -436,7 +442,7 @@ for i, labelName in ipairs(inputLabels) do
     label.Position = UDim2.new(0, xPos, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = labelName
-    label.TextColor3 = Color3.fromRGB(255,255,255)
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
     label.Font = Enum.Font.SourceSansBold
     label.TextSize = 11
     label.TextXAlignment = Enum.TextXAlignment.Center
