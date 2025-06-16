@@ -1,8 +1,10 @@
 -- === SERVICES ===
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local StarterGui = game:GetService("StarterGui")
 local GuiService = game:GetService("GuiService")
-local TweenService = game:GetService("TweenService")
+local TextService = game:GetService("TextService")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -10,7 +12,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local maxDistance = 25
 local maxESP = 5
 local nearbyDistance = 15
-local updateInterval = 1.5  -- Increased update interval
 
 -- === CROP CATEGORIES & COLORS ===
 local cropCategories = {
@@ -72,30 +73,27 @@ local function getPP(model)
 end
 
 -- === ADD MISSING VALUES TO PLANT MODELS ===
-local plantCheckDelay = 30  -- Increased frequency
+local plantCheckDelay = 15  -- Reduce frequency
 spawn(function()
     while task.wait(plantCheckDelay) do
-        -- Only check if we're in a garden
-        if workspace:FindFirstChild("Garden") then
-            for _, model in ipairs(workspace.Garden:GetDescendants()) do
-                if model:IsA("Model") and cropSet[model.Name:lower()] then
-                    if not model:FindFirstChild("Item_String") then
-                        local itemString = Instance.new("StringValue", model)
-                        itemString.Name = "Item_String"
-                        itemString.Value = model.Name
-                    end
+        for _, model in ipairs(workspace:GetDescendants()) do
+            if model:IsA("Model") and cropSet[model.Name:lower()] then
+                if not model:FindFirstChild("Item_String") then
+                    local itemString = Instance.new("StringValue", model)
+                    itemString.Name = "Item_String"
+                    itemString.Value = model.Name
+                end
 
-                    if not model:FindFirstChild("Variant") then
-                        local variant = Instance.new("StringValue", model)
-                        variant.Name = "Variant"
-                        variant.Value = "Normal"
-                    end
+                if not model:FindFirstChild("Variant") then
+                    local variant = Instance.new("StringValue", model)
+                    variant.Name = "Variant"
+                    variant.Value = "Normal"
+                end
 
-                    if not model:FindFirstChild("Weight") then
-                        local weight = Instance.new("NumberValue", model)
-                        weight.Name = "Weight"
-                        weight.Value = 3.4
-                    end
+                if not model:FindFirstChild("Weight") then
+                    local weight = Instance.new("NumberValue", model)
+                    weight.Name = "Weight"
+                    weight.Value = 3.4
                 end
             end
         end
@@ -115,6 +113,7 @@ end
 -- === ESP CREATION ===
 local espMap = {}
 local lastUpdate = 0
+local updateInterval = 1  -- Update every second
 
 local function createESP(model, labelText)
     if espMap[model] then
@@ -166,7 +165,7 @@ local NearbyScroll
 local function updateNearbyPlants()
     if not NearbyScroll then return end
     
-    -- Clear existing labels
+    -- Clear existing labels efficiently
     for _, child in ipairs(NearbyScroll:GetChildren()) do
         if child:IsA("TextLabel") then
             child:Destroy()
@@ -178,21 +177,13 @@ local function updateNearbyPlants()
     if not root then return end
 
     local found = {}
-    local count = 0
-    
-    -- Only scan the garden area for better performance
-    local garden = workspace:FindFirstChild("Garden")
-    if not garden then return end
-    
-    for _, model in ipairs(garden:GetDescendants()) do
+    for _, model in ipairs(workspace:GetDescendants()) do
         if model:IsA("Model") and cropSet[model.Name:lower()] then
             local pp = getPP(model)
             if pp then
                 local dist = (pp.Position - root.Position).Magnitude
                 if dist <= nearbyDistance then
                     table.insert(found, {model=model, dist=dist})
-                    count = count + 1
-                    if count > 30 then break end  -- Lowered limit to 30 plants
                 end
             end
         end
@@ -218,13 +209,8 @@ end
 
 -- === MAIN UPDATE LOOP ===
 local selectedTypes = {}
-
--- Initialize Selected Types (only common crops enabled by default)
-for _, crop in ipairs(cropCategories.Obtainable.Common) do
-    selectedTypes[crop] = true
-end
-for _, crop in ipairs(cropCategories.Unobtainable.Common) do
-    selectedTypes[crop] = true
+for _, v in pairs(cropSet) do
+    selectedTypes[v] = true
 end
 
 local function update()
@@ -238,14 +224,10 @@ local function update()
     local nearest = {}
 
     if root then
-        -- Only scan garden area
-        local garden = workspace:FindFirstChild("Garden")
-        if not garden then
-            cleanup(validModels)
-            return 
-        end
-        
-        for _, model in ipairs(garden:GetDescendants()) do
+        -- Optimized descendant scanning
+        local descendants = workspace:GetDescendants()
+        for i = 1, #descendants do
+            local model = descendants[i]
             if model:IsA("Model") and selectedTypes[model.Name] then
                 local pp = getPP(model)
                 if pp then
@@ -300,8 +282,8 @@ local function update()
 
     cleanup(validModels)
     
-    -- Update nearby plants less frequently
-    if currentTime % 5 < 0.1 then  -- Update every 5 seconds
+    -- Update nearby plants less frequently to reduce lag
+    if currentTime % 3 < 0.1 then  -- Update every 3 seconds
         updateNearbyPlants()
     end
 end
@@ -310,86 +292,6 @@ end
 RunService.Heartbeat:Connect(function()
     pcall(update)
 end)
-
--- === NOTIFICATION SYSTEM ===
-local function showNotification(message)
-    local screenGui = LocalPlayer.PlayerGui:FindFirstChild("PlantESPSelector")
-    if not screenGui then return end
-    
-    -- Remove existing notifications
-    for _, obj in ipairs(screenGui:GetChildren()) do
-        if obj.Name == "Notification" then
-            obj:Destroy()
-        end
-    end
-    
-    local notification = Instance.new("Frame")
-    notification.Name = "Notification"
-    notification.Size = UDim2.new(0, 300, 0, 50)
-    notification.Position = UDim2.new(0.5, -150, 0.1, 0)
-    notification.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    notification.BackgroundTransparency = 0.3
-    notification.BorderSizePixel = 0
-    notification.ZIndex = 100
-    notification.Parent = screenGui
-    
-    local corner = Instance.new("UICorner", notification)
-    corner.CornerRadius = UDim.new(0, 8)
-    
-    local stroke = Instance.new("UIStroke", notification)
-    stroke.Color = Color3.fromRGB(255, 50, 50)
-    stroke.Thickness = 2
-    
-    local label = Instance.new("TextLabel", notification)
-    label.Size = UDim2.new(1, -10, 1, -10)
-    label.Position = UDim2.new(0, 5, 0, 5)
-    label.BackgroundTransparency = 1
-    label.Text = message
-    label.TextColor3 = Color3.new(1, 1, 1)
-    label.Font = Enum.Font.SourceSansBold
-    label.TextSize = 18
-    label.TextWrapped = true
-    
-    -- Fade in animation
-    notification.BackgroundTransparency = 1
-    label.TextTransparency = 1
-    
-    local fadeIn = TweenService:Create(
-        notification,
-        TweenInfo.new(0.5),
-        {BackgroundTransparency = 0.3}
-    )
-    
-    local textFadeIn = TweenService:Create(
-        label,
-        TweenInfo.new(0.5),
-        {TextTransparency = 0}
-    )
-    
-    fadeIn:Play()
-    textFadeIn:Play()
-    
-    wait(3)  -- Show for 3 seconds
-    
-    -- Fade out animation
-    local fadeOut = TweenService:Create(
-        notification,
-        TweenInfo.new(0.5),
-        {BackgroundTransparency = 1}
-    )
-    
-    local textFadeOut = TweenService:Create(
-        label,
-        TweenInfo.new(0.5),
-        {TextTransparency = 1}
-    )
-    
-    fadeOut:Play()
-    textFadeOut:Play()
-    
-    fadeOut.Completed:Wait()
-    notification:Destroy()
-end
 
 -- === UI SETUP ===
 local ScreenGui = Instance.new("ScreenGui")
@@ -412,7 +314,7 @@ TitleBar.BackgroundTransparency = 0.25
 TitleBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TitleBar.BorderSizePixel = 0
 
--- Discord Button
+-- Discord Button - Fixed version with reliable method
 local DiscordBtn = Instance.new("TextButton", TitleBar)
 DiscordBtn.Size = UDim2.new(0, 60, 0, 18)
 DiscordBtn.Position = UDim2.new(0, 4, 0.5, -9)
@@ -424,24 +326,22 @@ DiscordBtn.TextSize = 10
 DiscordBtn.AutoButtonColor = false
 DiscordBtn.BorderSizePixel = 2
 DiscordBtn.BorderColor3 = Color3.fromRGB(255, 50, 50)
-DiscordBtn.ZIndex = 20
+DiscordBtn.ZIndex = 20  -- Ensure it's on top
 
 local DiscordCorner = Instance.new("UICorner", DiscordBtn)
 DiscordCorner.CornerRadius = UDim.new(0, 4)
 
+-- Universal Discord button function that works on all devices
 DiscordBtn.MouseButton1Click:Connect(function()
     pcall(function()
-        -- Show notification
-        showNotification("Joining PUNK TEAM Discord...")
-        
-        -- Try opening browser
+        -- Try all possible methods
         local success = pcall(function()
             GuiService:OpenBrowserWindow("https://discord.gg/JxEjAtdgWD")
         end)
         
         if not success then
             success = pcall(function()
-                game:GetService("StarterGui"):SetCore("OpenBrowserWindow", {
+                StarterGui:SetCore("OpenBrowserWindow", {
                     URL = "https://discord.gg/JxEjAtdgWD"
                 })
             end)
@@ -451,7 +351,7 @@ DiscordBtn.MouseButton1Click:Connect(function()
             -- Fallback to clipboard method
             pcall(function()
                 setclipboard("https://discord.gg/JxEjAtdgWD")
-                showNotification("Discord link copied to clipboard!")
+                warn("Discord link copied to clipboard! Paste it in your browser.")
             end)
         end
     end)
@@ -661,14 +561,11 @@ local function getCategorizedTypes()
         end
     end
 
-    local garden = workspace:FindFirstChild("Garden")
-    if garden then
-        for _, model in ipairs(garden:GetDescendants()) do
-            if model:IsA("Model") then
-                local info = cropSet[model.Name:lower()]
-                if info then
-                    cropsByCategory[info.obtain][info.rarity][model.Name] = true
-                end
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") then
+            local info = cropSet[model.Name:lower()]
+            if info then
+                cropsByCategory[info.obtain][info.rarity][model.Name] = true
             end
         end
     end
@@ -685,7 +582,6 @@ local function createToggles()
 
     local cropsByCategory = getCategorizedTypes()
 
-    -- FIX: Create buttons with current toggle state
     for _, rarity in ipairs(rarityOrder) do
         if cropCategories.Obtainable[rarity] then
             for _, crop in ipairs(cropCategories.Obtainable[rarity]) do
@@ -694,11 +590,7 @@ local function createToggles()
                     btn.Size = UDim2.new(1, -4, 0, 14)
                     btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
                     btn.TextColor3 = Color3.new(1, 1, 1)
-                    
-                    -- Set initial state based on selectedTypes
-                    local isSelected = selectedTypes[crop] == true
-                    btn.Text = (isSelected and "[ON] " or "[OFF] ") .. crop
-                    
+                    btn.Text = "[OFF] " .. crop
                     btn.AutoButtonColor = true
                     btn.TextSize = 10
                     btn.Font = Enum.Font.SourceSansBold
@@ -719,11 +611,7 @@ local function createToggles()
                     btn.Size = UDim2.new(1, -4, 0, 14)
                     btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
                     btn.TextColor3 = Color3.new(1, 1, 1)
-                    
-                    -- Set initial state based on selectedTypes
-                    local isSelected = selectedTypes[crop] == true
-                    btn.Text = (isSelected and "[ON] " or "[OFF] ") .. crop
-                    
+                    btn.Text = "[OFF] " .. crop
                     btn.AutoButtonColor = true
                     btn.TextSize = 10
                     btn.Font = Enum.Font.SourceSansBold
@@ -740,7 +628,7 @@ end
 createToggles()
 
 spawn(function()
-    while task.wait(15) do  -- Reduced toggle update frequency
+    while task.wait(10) do
         createToggles()
     end
 end)
@@ -875,12 +763,14 @@ local function createSizeToggleBtn(frame)
                 if b:IsA("TextButton") then
                     b.TextSize = 8
                     b.TextWrapped = true
+                    b.TextScaled = false
                 end
             end
             for _, b in ipairs(UnobtainScroll:GetChildren()) do
                 if b:IsA("TextButton") then
                     b.TextSize = 8
                     b.TextWrapped = true
+                    b.TextScaled = false
                 end
             end
 
@@ -964,3 +854,11 @@ local function createSizeToggleBtn(frame)
 end
 
 local SizeToggleBtn = createSizeToggleBtn(Frame)
+
+-- Initialize Selected Types
+for _, crop in ipairs(cropCategories.Obtainable.Common) do
+    selectedTypes[crop] = true
+end
+for _, crop in ipairs(cropCategories.Unobtainable.Common) do
+    selectedTypes[crop] = true
+end
