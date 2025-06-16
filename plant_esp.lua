@@ -4,6 +4,7 @@ local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local StarterGui = game:GetService("StarterGui")
 local GuiService = game:GetService("GuiService")
+local TextService = game:GetService("TextService")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -72,7 +73,7 @@ local function getPP(model)
 end
 
 -- === ADD MISSING VALUES TO PLANT MODELS ===
-local plantCheckDelay = 10  -- Reduce frequency
+local plantCheckDelay = 15  -- Reduce frequency
 spawn(function()
     while task.wait(plantCheckDelay) do
         for _, model in ipairs(workspace:GetDescendants()) do
@@ -129,6 +130,7 @@ local function createESP(model, labelText)
     bg.Size = UDim2.new(0, 200, 0, 16)
     bg.StudsOffset = Vector3.new(0, 4, 0)
     bg.AlwaysOnTop = true
+    bg.MaxDistance = 100  -- Only show within 100 studs
 
     local tl = Instance.new("TextLabel", bg)
     tl.Size = UDim2.new(1, 0, 1, 0)
@@ -222,7 +224,10 @@ local function update()
     local nearest = {}
 
     if root then
-        for _, model in ipairs(workspace:GetDescendants()) do
+        -- Optimized descendant scanning
+        local descendants = workspace:GetDescendants()
+        for i = 1, #descendants do
+            local model = descendants[i]
             if model:IsA("Model") and selectedTypes[model.Name] then
                 local pp = getPP(model)
                 if pp then
@@ -276,7 +281,11 @@ local function update()
     end
 
     cleanup(validModels)
-    updateNearbyPlants()
+    
+    -- Update nearby plants less frequently to reduce lag
+    if currentTime % 3 < 0.1 then  -- Update every 3 seconds
+        updateNearbyPlants()
+    end
 end
 
 -- === RUN EVERY SECOND ===
@@ -305,7 +314,7 @@ TitleBar.BackgroundTransparency = 0.25
 TitleBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TitleBar.BorderSizePixel = 0
 
--- Discord Button - Fixed version
+-- Discord Button - Fixed version with reliable method
 local DiscordBtn = Instance.new("TextButton", TitleBar)
 DiscordBtn.Size = UDim2.new(0, 60, 0, 18)
 DiscordBtn.Position = UDim2.new(0, 4, 0.5, -9)
@@ -317,13 +326,34 @@ DiscordBtn.TextSize = 10
 DiscordBtn.AutoButtonColor = false
 DiscordBtn.BorderSizePixel = 2
 DiscordBtn.BorderColor3 = Color3.fromRGB(255, 50, 50)
+DiscordBtn.ZIndex = 20  -- Ensure it's on top
 
 local DiscordCorner = Instance.new("UICorner", DiscordBtn)
 DiscordCorner.CornerRadius = UDim.new(0, 4)
 
+-- Universal Discord button function that works on all devices
 DiscordBtn.MouseButton1Click:Connect(function()
     pcall(function()
-        GuiService:OpenBrowserWindow("https://discord.gg/JxEjAtdgWD")
+        -- Try all possible methods
+        local success = pcall(function()
+            GuiService:OpenBrowserWindow("https://discord.gg/JxEjAtdgWD")
+        end)
+        
+        if not success then
+            success = pcall(function()
+                StarterGui:SetCore("OpenBrowserWindow", {
+                    URL = "https://discord.gg/JxEjAtdgWD"
+                })
+            end)
+        end
+        
+        if not success then
+            -- Fallback to clipboard method
+            pcall(function()
+                setclipboard("https://discord.gg/JxEjAtdgWD")
+                warn("Discord link copied to clipboard! Paste it in your browser.")
+            end)
+        end
     end)
 end)
 
