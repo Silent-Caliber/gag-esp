@@ -218,13 +218,8 @@ end
 
 -- === MAIN UPDATE LOOP ===
 local selectedTypes = {}
-
--- Initialize Selected Types (only common crops enabled by default)
-for _, crop in ipairs(cropCategories.Obtainable.Common) do
-    selectedTypes[crop] = true
-end
-for _, crop in ipairs(cropCategories.Unobtainable.Common) do
-    selectedTypes[crop] = true
+for _, v in pairs(cropSet) do
+    selectedTypes[v] = true
 end
 
 local function update()
@@ -651,28 +646,22 @@ for i, labelName in ipairs(inputLabels) do
     table.insert(inputBoxes, box)
 end
 
--- Toggles for Crop Categories
-local function getCategorizedTypes()
-    local cropsByCategory = {}
-    for obtain, rarities in pairs(cropCategories) do
-        cropsByCategory[obtain] = {}
-        for rarity, _ in pairs(rarities) do
-            cropsByCategory[obtain][rarity] = {}
-        end
-    end
-
+-- === CROP TOGGLE MANAGEMENT ===
+local function getCropsInGarden()
+    local cropsInGarden = {}
     local garden = workspace:FindFirstChild("Garden")
     if garden then
         for _, model in ipairs(garden:GetDescendants()) do
             if model:IsA("Model") then
-                local info = cropSet[model.Name:lower()]
-                if info then
-                    cropsByCategory[info.obtain][info.rarity][model.Name] = true
+                local cropName = model.Name
+                -- Check if this is a valid crop
+                if cropSet[cropName:lower()] then
+                    cropsInGarden[cropName] = true
                 end
             end
         end
     end
-    return cropsByCategory
+    return cropsInGarden
 end
 
 local function createToggles()
@@ -683,22 +672,19 @@ local function createToggles()
         if child:IsA("TextButton") then child:Destroy() end
     end
 
-    local cropsByCategory = getCategorizedTypes()
+    -- Get crops currently in the garden
+    local cropsInGarden = getCropsInGarden()
 
-    -- FIX: Create buttons with current toggle state
+    -- Create toggles only for crops that are in the garden
     for _, rarity in ipairs(rarityOrder) do
         if cropCategories.Obtainable[rarity] then
             for _, crop in ipairs(cropCategories.Obtainable[rarity]) do
-                if cropsByCategory.Obtainable[rarity][crop] then
+                if cropsInGarden[crop] then
                     local btn = Instance.new("TextButton", ObtainScroll)
                     btn.Size = UDim2.new(1, -4, 0, 14)
                     btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
                     btn.TextColor3 = Color3.new(1, 1, 1)
-                    
-                    -- Set initial state based on selectedTypes
-                    local isSelected = selectedTypes[crop] == true
-                    btn.Text = (isSelected and "[ON] " or "[OFF] ") .. crop
-                    
+                    btn.Text = (selectedTypes[crop] and "[ON] " or "[OFF] ") .. crop
                     btn.AutoButtonColor = true
                     btn.TextSize = 10
                     btn.Font = Enum.Font.SourceSansBold
@@ -714,16 +700,12 @@ local function createToggles()
     for _, rarity in ipairs(rarityOrder) do
         if cropCategories.Unobtainable[rarity] then
             for _, crop in ipairs(cropCategories.Unobtainable[rarity]) do
-                if cropsByCategory.Unobtainable[rarity][crop] then
+                if cropsInGarden[crop] then
                     local btn = Instance.new("TextButton", UnobtainScroll)
                     btn.Size = UDim2.new(1, -4, 0, 14)
                     btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
                     btn.TextColor3 = Color3.new(1, 1, 1)
-                    
-                    -- Set initial state based on selectedTypes
-                    local isSelected = selectedTypes[crop] == true
-                    btn.Text = (isSelected and "[ON] " or "[OFF] ") .. crop
-                    
+                    btn.Text = (selectedTypes[crop] and "[ON] " or "[OFF] ") .. crop
                     btn.AutoButtonColor = true
                     btn.TextSize = 10
                     btn.Font = Enum.Font.SourceSansBold
@@ -740,7 +722,7 @@ end
 createToggles()
 
 spawn(function()
-    while task.wait(15) do  -- Reduced toggle update frequency
+    while task.wait(15) do
         createToggles()
     end
 end)
@@ -964,3 +946,11 @@ local function createSizeToggleBtn(frame)
 end
 
 local SizeToggleBtn = createSizeToggleBtn(Frame)
+
+-- Initialize Selected Types
+for _, crop in ipairs(cropCategories.Obtainable.Common) do
+    selectedTypes[crop] = true
+end
+for _, crop in ipairs(cropCategories.Unobtainable.Common) do
+    selectedTypes[crop] = true
+end
