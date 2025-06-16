@@ -132,6 +132,7 @@ local function createESP(model, labelText)
     return tl
 end
 
+-- === CLEANUP OLD GUIs ===
 local function cleanup(validModels)
     for model, gui in pairs(espMap) do
         if not validModels[model] then
@@ -142,8 +143,8 @@ local function cleanup(validModels)
 end
 
 -- === NEARBY PLANTS DISPLAY ===
-local NearbyFrame = Frame:FindFirstChild("NearbyFrame")
-local NearbyScroll = NearbyFrame and NearbyFrame:FindFirstChild("ScrollingFrame")
+local NearbyFrame
+local NearbyScroll
 
 local function updateNearbyPlants()
     if NearbyScroll then
@@ -188,6 +189,10 @@ end
 
 -- === MAIN UPDATE LOOP ===
 local selectedTypes = {}
+for _, v in pairs(cropSet) do
+    selectedTypes[v] = true
+end
+
 local function update()
     local validModels = {}
     local char = LocalPlayer.Character
@@ -207,7 +212,7 @@ local function update()
             end
         end
 
-        table.sort(nearest, function(a, b) return a.dist < b.dist end)
+        table.sort(nearest, function(a,b) return a.dist < b.dist end)
 
         for i = 1, math.min(#nearest, maxESP) do
             local model = nearest[i].model
@@ -232,6 +237,7 @@ local function update()
 
             -- Format label
             local formattedPrice = price and price > 0 and tostring(math.floor(price)) or "?"
+
             local label = string.format(
                 "<font color='%s'>%s</font> - %s kg - <font color='#50FF50'>%s</font>",
                 hexColor, model.Name, weight, formattedPrice
@@ -258,25 +264,15 @@ spawn(function()
 end)
 
 -- === YOUR EXISTING UI CODE GOES HERE ===
--- [Paste the rest of your UI code below here exactly as-is]
--- This includes all the UI elements like Frame, LegendCol, ObtainCol, NearbyFrame, etc.
--- Also includes input boxes, toggles, buttons, and settings from your original file
+-- [START OF ORIGINAL UI CODE]
 
-
--- UI Sizes (adjusted for perfect square in compact mode)
-local normalSize = UDim2.new(0, 340, 0, 250)
-local compactSize = UDim2.new(0, 160, 0, 160) -- Square size
-local normalPos = UDim2.new(0, 10, 0, 60)
-local compactPos = UDim2.new(0, 10, 0, 20)
-
--- UI Setup
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PlantESPSelector"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = normalSize
-Frame.Position = normalPos
+Frame.Size = UDim2.new(0, 340, 0, 250)
+Frame.Position = UDim2.new(0, 10, 0, 60)
 Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 Frame.BackgroundTransparency = 0.3
 Frame.Active = true
@@ -380,7 +376,7 @@ UnobtainScroll.ScrollBarThickness = 4
 local UnobtainListLayout = Instance.new("UIListLayout", UnobtainScroll)
 UnobtainListLayout.Padding = UDim.new(0, 1)
 
-local NearbyFrame = Instance.new("Frame", Frame)
+NearbyFrame = Instance.new("Frame", Frame)
 NearbyFrame.Size = UDim2.new(0, 275, 0, 24)
 NearbyFrame.Position = UDim2.new(0, 65, 1, -76)
 NearbyFrame.BackgroundTransparency = 0.3
@@ -396,7 +392,7 @@ NearbyLabel.TextColor3 = Color3.fromRGB(255,255,255)
 NearbyLabel.Font = Enum.Font.SourceSansBold
 NearbyLabel.TextSize = 11
 
-local NearbyScroll = Instance.new("ScrollingFrame", NearbyFrame)
+NearbyScroll = Instance.new("ScrollingFrame", NearbyFrame)
 NearbyScroll.Size = UDim2.new(1, 0, 1, -12)
 NearbyScroll.Position = UDim2.new(0, 0, 0, 12)
 NearbyScroll.CanvasSize = UDim2.new(0, 0, 0, 100)
@@ -413,27 +409,22 @@ InputFrame.BackgroundTransparency = 0.3
 InputFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 InputFrame.BorderSizePixel = 0
 
-local maxDistance = 25
-local maxESP = 10
-local nearbyDistance = 15
-
 local inputLabels = {"Max Dist", "Max ESP", "Nearby Dist"}
 local inputVars = {"maxDistance", "maxESP", "nearbyDistance"}
 local inputValues = {maxDistance, maxESP, nearbyDistance}
-
 local inputLabelsTbl = {}
 local inputBoxes = {}
 
 for i, labelName in ipairs(inputLabels) do
     local colWidth = 275 / #inputLabels
     local xPos = (i-1) * colWidth
-    
+
     local label = Instance.new("TextLabel", InputFrame)
     label.Size = UDim2.new(0, colWidth, 0, 12)
     label.Position = UDim2.new(0, xPos, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = labelName
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextColor3 = Color3.fromRGB(255,255,255)
     label.Font = Enum.Font.SourceSansBold
     label.TextSize = 11
     label.TextXAlignment = Enum.TextXAlignment.Center
@@ -467,11 +458,30 @@ for i, labelName in ipairs(inputLabels) do
             box.Text = tostring(inputValues[i])
         end
     end)
-    
+
     table.insert(inputBoxes, box)
 end
 
-local selectedTypes = {}
+-- Toggles for plant categories
+local function getCategorizedTypes()
+    local cropsByCategory = {}
+    for obtain, rarities in pairs(cropCategories) do
+        cropsByCategory[obtain] = {}
+        for rarity, _ in pairs(rarities) do
+            cropsByCategory[obtain][rarity] = {}
+        end
+    end
+
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") then
+            local info = cropSet[model.Name:lower()]
+            if info then
+                cropsByCategory[info.obtain][info.rarity][model.Name] = true
+            end
+        end
+    end
+    return cropsByCategory
+end
 
 local function createToggles()
     for _, child in ipairs(ObtainScroll:GetChildren()) do
@@ -482,6 +492,7 @@ local function createToggles()
     end
 
     local cropsByCategory = getCategorizedTypes()
+
     for _, rarity in ipairs(rarityOrder) do
         if cropCategories.Obtainable[rarity] then
             for _, crop in ipairs(cropCategories.Obtainable[rarity]) do
@@ -502,6 +513,7 @@ local function createToggles()
             end
         end
     end
+
     for _, rarity in ipairs(rarityOrder) do
         if cropCategories.Unobtainable[rarity] then
             for _, crop in ipairs(cropCategories.Unobtainable[rarity]) do
@@ -532,6 +544,7 @@ spawn(function()
     end
 end)
 
+-- Toggle Button
 local function createToggleBtn(screenGui, frame)
     if screenGui:FindFirstChild("ShowHideESPBtn") then
         screenGui.ShowHideESPBtn:Destroy()
@@ -570,11 +583,13 @@ local function createToggleBtn(screenGui, frame)
         frame.Visible = uiVisible
         ToggleBtn.Text = uiVisible and "✖" or "⟳"
     end)
+
     return ToggleBtn
 end
 
 local ToggleBtn = createToggleBtn(ScreenGui, Frame)
 
+-- Compact Mode Toggle
 local function createSizeToggleBtn(frame)
     if frame:FindFirstChild("SizeToggleBtn") then
         frame.SizeToggleBtn:Destroy()
@@ -594,6 +609,7 @@ local function createSizeToggleBtn(frame)
     btn.BackgroundTransparency = 0.13
     btn.ZIndex = 101
     btn.BorderSizePixel = 0
+
     local corner = Instance.new("UICorner", btn)
     corner.CornerRadius = UDim.new(1, 0)
 
@@ -602,72 +618,60 @@ local function createSizeToggleBtn(frame)
     btn.MouseButton1Click:Connect(function()
         compact = not compact
         if compact then
-            -- Square layout
-            frame.Size = compactSize
-            frame.Position = compactPos
-            
-            -- Adjust columns to fit square
+            -- Compact layout
+            frame.Size = UDim2.new(0, 160, 0, 160)
+            frame.Position = UDim2.new(0, 10, 0, 20)
             LegendCol.Size = UDim2.new(0, 50, 0, 100)
             LegendCol.Position = UDim2.new(0, 0, 0, 22)
             ObtainCol.Size = UDim2.new(0, 50, 0, 100)
             ObtainCol.Position = UDim2.new(0, 50, 0, 22)
             UnobtainCol.Size = UDim2.new(0, 50, 0, 100)
             UnobtainCol.Position = UDim2.new(0, 100, 0, 22)
-            
-            -- Move bottom frames to fit square
             NearbyFrame.Size = UDim2.new(0, 150, 0, 18)
             NearbyFrame.Position = UDim2.new(0, 0, 1, -38)
             InputFrame.Size = UDim2.new(0, 150, 0, 16)
             InputFrame.Position = UDim2.new(0, 0, 1, -20)
-            
-            -- Update text sizes for compact mode
+
             Title.TextSize = 10
             LegendLabel.TextSize = 9
             ObtainLabel.TextSize = 9
             UnobtainLabel.TextSize = 9
             NearbyLabel.TextSize = 8
-            
             for _, child in ipairs(LegendCol:GetChildren()) do
                 if child:IsA("TextLabel") and child ~= LegendLabel then
                     child.TextSize = 9
                 end
             end
-            
             for i, label in ipairs(inputLabelsTbl) do
                 label.TextSize = 8
             end
-            
             for i, box in ipairs(inputBoxes) do
                 box.TextSize = 10
             end
-            
             for _, b in ipairs(ObtainScroll:GetChildren()) do
                 if b:IsA("TextButton") then
                     b.TextSize = 8
                 end
             end
-            
             for _, b in ipairs(UnobtainScroll:GetChildren()) do
                 if b:IsA("TextButton") then
                     b.TextSize = 8
                 end
             end
-            
-            -- Adjust input boxes to fit square
+
             local colWidth = 150 / #inputLabels
             for i, label in ipairs(inputLabelsTbl) do
                 label.Size = UDim2.new(0, colWidth, 0, 8)
                 label.Position = UDim2.new(0, (i-1)*colWidth, 0, 0)
             end
-            
             for i, box in ipairs(inputBoxes) do
                 box.Size = UDim2.new(0, colWidth - 4, 0, 12)
                 box.Position = UDim2.new(0, (i-1)*colWidth + 2, 0, 8)
             end
         else
             -- Normal layout
-            frame.Size = normalSize
-            frame.Position = normalPos
+            frame.Size = UDim2.new(0, 340, 0, 250)
+            frame.Position = UDim2.new(0, 10, 0, 60)
             LegendCol.Size = UDim2.new(0, 65, 0, 174)
             LegendCol.Position = UDim2.new(0, 0, 0, 22)
             ObtainCol.Size = UDim2.new(0, 120, 0, 174)
@@ -678,216 +682,46 @@ local function createSizeToggleBtn(frame)
             NearbyFrame.Position = UDim2.new(0, 65, 1, -76)
             InputFrame.Size = UDim2.new(0, 275, 0, 30)
             InputFrame.Position = UDim2.new(0, 65, 1, -42)
-            
-            -- Restore text sizes
+
             Title.TextSize = 14
             LegendLabel.TextSize = 12
             ObtainLabel.TextSize = 12
             UnobtainLabel.TextSize = 12
             NearbyLabel.TextSize = 11
-            
             for _, child in ipairs(LegendCol:GetChildren()) do
                 if child:IsA("TextLabel") and child ~= LegendLabel then
                     child.TextSize = 12
                 end
             end
-            
             for i, label in ipairs(inputLabelsTbl) do
                 label.TextSize = 11
             end
-            
             for i, box in ipairs(inputBoxes) do
                 box.TextSize = 12
             end
-            
             for _, b in ipairs(ObtainScroll:GetChildren()) do
                 if b:IsA("TextButton") then
                     b.TextSize = 10
                 end
             end
-            
             for _, b in ipairs(UnobtainScroll:GetChildren()) do
                 if b:IsA("TextButton") then
                     b.TextSize = 10
                 end
             end
-            
-            -- Restore input box positions
+
             local colWidth = 275 / #inputLabels
             for i, label in ipairs(inputLabelsTbl) do
                 label.Size = UDim2.new(0, colWidth, 0, 12)
                 label.Position = UDim2.new(0, (i-1)*colWidth, 0, 0)
             end
-            
             for i, box in ipairs(inputBoxes) do
                 box.Size = UDim2.new(0, colWidth - 4, 0, 16)
                 box.Position = UDim2.new(0, (i-1)*colWidth + 2, 0, 12)
             end
         end
     end)
-
     return btn
 end
 
 local SizeToggleBtn = createSizeToggleBtn(Frame)
-
-local function getPP(model)
-    if model.PrimaryPart then return model.PrimaryPart end
-    for _,c in ipairs(model:GetChildren()) do
-        if c:IsA("BasePart") then
-            model.PrimaryPart = c
-            return c
-        end
-    end
-    return nil
-end
-
-local function createESP(model, labelText)
-    if espMap[model] then
-        espMap[model].Text = labelText
-        return espMap[model]
-    end
-    local pp = getPP(model)
-    if not pp then return end
-    local bg = Instance.new("BillboardGui", model)
-    bg.Name = "PlantESP"
-    bg.Adornee = pp
-    bg.Size = UDim2.new(0, 200, 0, 16)
-    bg.StudsOffset = Vector3.new(0, 4, 0)
-    bg.AlwaysOnTop = true
-    
-    local tl = Instance.new("TextLabel", bg)
-    tl.Size = UDim2.new(1, 0, 1, 0)
-    tl.BackgroundTransparency = 1
-    tl.TextColor3 = Color3.new(1, 1, 1)
-    tl.Font = Enum.Font.FredokaOne
-    tl.TextSize = 10
-    tl.TextWrapped = false
-    tl.RichText = true
-    tl.Text = labelText
-    
-    tl.TextStrokeColor3 = Color3.new(0, 0, 0)
-    tl.TextStrokeTransparency = 0.3
-    tl.TextXAlignment = Enum.TextXAlignment.Center
-    
-    espMap[model] = tl
-    return tl
-end
-
-local function cleanup(validModels)
-    for model, gui in pairs(espMap) do
-        if not validModels[model] then
-            if gui.Parent then gui.Parent:Destroy() end
-            espMap[model] = nil
-        end
-    end
-end
-
-local function updateNearbyPlants()
-    for _, child in ipairs(NearbyScroll:GetChildren()) do
-        if child:IsA("TextLabel") then child:Destroy() end
-    end
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-    local found = {}
-    for _, model in ipairs(workspace:GetDescendants()) do
-        if model:IsA("Model") and cropSet[model.Name:lower()] then
-            local pp = getPP(model)
-            if pp then
-                local dist = (pp.Position - root.Position).Magnitude
-                if dist <= nearbyDistance then
-                    found[#found+1] = {model=model, dist=dist}
-                end
-            end
-        end
-    end
-    table.sort(found, function(a,b) return a.dist < b.dist end)
-    for _, entry in ipairs(found) do
-        local label = Instance.new("TextLabel", NearbyScroll)
-        label.Size = UDim2.new(1, -4, 0, 14)
-        label.BackgroundTransparency = 1
-        local cropInfo = cropSet[entry.model.Name:lower()]
-        local rarity = cropInfo and cropInfo.rarity or "Common"
-        label.TextColor3 = rarityColors[rarity] or Color3.new(1,1,1)
-        label.Font = Enum.Font.SourceSansBold
-        label.TextSize = 10
-        label.Text = string.format("%s (%.1f)", entry.model.Name, entry.dist)
-    end
-end
-
-local function update()
-    local validModels = {}
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    local nearest = {}
-    if root then
-        for _, model in ipairs(workspace:GetDescendants()) do
-            if model:IsA("Model") and selectedTypes[model.Name] then
-                local pp = getPP(model)
-                if pp then
-                    local dist = (pp.Position - root.Position).Magnitude
-                    if dist <= maxDistance then
-                        table.insert(nearest, {model=model, dist=dist})
-                    end
-                end
-            end
-        end
-        table.sort(nearest, function(a, b) return a.dist < b.dist end)
-        for i = 1, math.min(#nearest, maxESP) do
-            local model = nearest[i].model
-            local weight
-            for _, child in ipairs(model:GetChildren()) do
-                if child:IsA("NumberValue") and child.Name:lower():find("weight") then
-                    weight = string.format("%.1f", child.Value)
-                    break
-                end
-            end
-            
-            local cropInfo = cropSet[model.Name:lower()]
-            local rarity = cropInfo and cropInfo.rarity or "Common"
-            local color = rarityColors[rarity] or Color3.new(1,1,1)
-            local hexColor = string.format("#%02X%02X%02X", math.floor(color.r * 255), math.floor(color.g * 255), math.floor(color.b * 255))
-            
-            local price
-            if CalculatePlantValue and typeof(CalculatePlantValue) == "table" and CalculatePlantValue.Calculate then
-                price = CalculatePlantValue.Calculate(model)
-            elseif CalculatePlantValue and typeof(CalculatePlantValue) == "function" then
-                price = CalculatePlantValue(model)
-            end
-
-            -- Format: "CropName - Weight kg - Price"
-            local label
-            if weight and price then
-                label = string.format(
-                    "<font color='%s'>%s</font> - %s kg - <font color='#50FF50'>%s</font>",
-                    hexColor, model.Name, weight, tostring(price))
-            elseif weight then
-                label = string.format(
-                    "<font color='%s'>%s</font> - %s kg",
-                    hexColor, model.Name, weight)
-            elseif price then
-                label = string.format(
-                    "<font color='%s'>%s</font> - <font color='#50FF50'>%s</font>",
-                    hexColor, model.Name, tostring(price))
-            else
-                label = string.format("<font color='%s'>%s</font>", hexColor, model.Name)
-            end
-
-            local espLabel = createESP(model, label)
-            if espLabel then
-                espLabel.RichText = true
-            end
-            validModels[model] = true
-        end
-    end
-    cleanup(validModels)
-    updateNearbyPlants()
-end
-
-spawn(function()
-    while true do
-        update()
-        wait(1)
-    end
-end)
