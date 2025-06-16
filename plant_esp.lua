@@ -64,9 +64,9 @@ local function getCategorizedTypes()
     return cropsByCategory
 end
 
--- UI Sizes (adjusted for perfect square in compact mode)
+-- UI Sizes
 local normalSize = UDim2.new(0, 340, 0, 250)
-local compactSize = UDim2.new(0, 160, 0, 160) -- Square size
+local compactSize = UDim2.new(0, 160, 0, 160)
 local normalPos = UDim2.new(0, 10, 0, 60)
 local compactPos = UDim2.new(0, 10, 0, 20)
 
@@ -403,25 +403,18 @@ local function createSizeToggleBtn(frame)
     btn.MouseButton1Click:Connect(function()
         compact = not compact
         if compact then
-            -- Square layout
             frame.Size = compactSize
             frame.Position = compactPos
-            
-            -- Adjust columns to fit square
             LegendCol.Size = UDim2.new(0, 50, 0, 100)
             LegendCol.Position = UDim2.new(0, 0, 0, 22)
             ObtainCol.Size = UDim2.new(0, 50, 0, 100)
             ObtainCol.Position = UDim2.new(0, 50, 0, 22)
             UnobtainCol.Size = UDim2.new(0, 50, 0, 100)
             UnobtainCol.Position = UDim2.new(0, 100, 0, 22)
-            
-            -- Move bottom frames to fit square
             NearbyFrame.Size = UDim2.new(0, 150, 0, 18)
             NearbyFrame.Position = UDim2.new(0, 0, 1, -38)
             InputFrame.Size = UDim2.new(0, 150, 0, 16)
             InputFrame.Position = UDim2.new(0, 0, 1, -20)
-            
-            -- Update text sizes for compact mode
             Title.TextSize = 10
             LegendLabel.TextSize = 9
             ObtainLabel.TextSize = 9
@@ -454,7 +447,6 @@ local function createSizeToggleBtn(frame)
                 end
             end
             
-            -- Adjust input boxes to fit square
             local colWidth = 150 / #inputLabels
             for i, label in ipairs(inputLabelsTbl) do
                 label.Size = UDim2.new(0, colWidth, 0, 8)
@@ -466,7 +458,6 @@ local function createSizeToggleBtn(frame)
                 box.Position = UDim2.new(0, (i-1)*colWidth + 2, 0, 8)
             end
         else
-            -- Normal layout
             frame.Size = normalSize
             frame.Position = normalPos
             LegendCol.Size = UDim2.new(0, 65, 0, 174)
@@ -479,8 +470,6 @@ local function createSizeToggleBtn(frame)
             NearbyFrame.Position = UDim2.new(0, 65, 1, -76)
             InputFrame.Size = UDim2.new(0, 275, 0, 30)
             InputFrame.Position = UDim2.new(0, 65, 1, -42)
-            
-            -- Restore text sizes
             Title.TextSize = 14
             LegendLabel.TextSize = 12
             ObtainLabel.TextSize = 12
@@ -513,7 +502,6 @@ local function createSizeToggleBtn(frame)
                 end
             end
             
-            -- Restore input box positions
             local colWidth = 275 / #inputLabels
             for i, label in ipairs(inputLabelsTbl) do
                 label.Size = UDim2.new(0, colWidth, 0, 12)
@@ -531,37 +519,6 @@ local function createSizeToggleBtn(frame)
 end
 
 local SizeToggleBtn = createSizeToggleBtn(Frame)
-
--- Helper function to find plant data
-local function findPlantData(model, name)
-    -- Check direct children first
-    local child = model:FindFirstChild(name)
-    if child then return child end
-    
-    -- Check in Config folder
-    local config = model:FindFirstChild("Config")
-    if config then
-        child = config:FindFirstChild(name)
-        if child then return child end
-    end
-    
-    -- Recursive search
-    for _, descendant in ipairs(model:GetDescendants()) do
-        if descendant.Name == name then
-            return descendant
-        end
-    end
-    
-    -- Check attributes
-    if model:GetAttribute(name) then
-        local valueObj = Instance.new("StringValue")
-        valueObj.Name = name
-        valueObj.Value = tostring(model:GetAttribute(name))
-        return valueObj
-    end
-    
-    return nil
-end
 
 local function getPP(model)
     if model.PrimaryPart then return model.PrimaryPart end
@@ -597,8 +554,6 @@ local function createESP(model, labelText)
     tl.TextWrapped = false
     tl.RichText = true
     tl.Text = labelText
-    
-    -- Maintain consistent text styling
     tl.TextStrokeColor3 = Color3.new(0, 0, 0)
     tl.TextStrokeTransparency = 0.3
     tl.TextXAlignment = Enum.TextXAlignment.Center
@@ -649,6 +604,32 @@ local function updateNearbyPlants()
     end
 end
 
+-- Fixed plant value calculation
+local function getPlantValue(model)
+    -- Check if model has required attributes
+    local itemString = model:GetAttribute("Item_String")
+    local variant = model:GetAttribute("Variant")
+    local weight = model:GetAttribute("Weight")
+    
+    if not itemString or not variant or not weight then
+        -- Try to get from children as fallback
+        itemString = model:FindFirstChild("Item_String") and model.Item_String.Value
+        variant = model:FindFirstChild("Variant") and model.Variant.Value
+        weight = model:FindFirstChild("Weight") and model.Weight.Value
+        
+        if not itemString or not variant or not weight then
+            return "N/A"
+        end
+    end
+    
+    -- Calculate value using game's function
+    local success, value = pcall(function()
+        return CalculatePlantValue(model)
+    end)
+    
+    return success and tostring(value) or "Err"
+end
+
 local function update()
     local validModels = {}
     local char = LocalPlayer.Character
@@ -669,44 +650,14 @@ local function update()
         table.sort(nearest, function(a, b) return a.dist < b.dist end)
         for i = 1, math.min(#nearest, maxESP) do
             local model = nearest[i].model
-            
-            -- Find required plant data
-            local itemString = findPlantData(model, "Item_String")
-            local variant = findPlantData(model, "Variant")
-            local weightVal = findPlantData(model, "Weight")
-            
-            local weight = weightVal and string.format("%.1f", weightVal.Value) or "N/A"
-            local price = "N/A"
-            
-            -- Calculate price if we have required data
-            if itemString and variant and weightVal then
-                -- Create temporary container for calculation
-                local tempModel = Instance.new("Model")
-                itemString:Clone().Parent = tempModel
-                variant:Clone().Parent = tempModel
-                weightVal:Clone().Parent = tempModel
-                
-                -- Copy attributes for mutation calculation
-                for attrName, attrValue in pairs(model:GetAttributes()) do
-                    tempModel:SetAttribute(attrName, attrValue)
-                end
-                
-                -- Calculate price
-                if CalculatePlantValue and type(CalculatePlantValue) == "function" then
-                    local success, result = pcall(CalculatePlantValue, tempModel)
-                    if success then
-                        price = tostring(result)
-                    end
-                end
-                tempModel:Destroy()
-            end
+            local price = getPlantValue(model)
+            local weight = model:GetAttribute("Weight") or (model:FindFirstChild("Weight") and model.Weight.Value) or "N/A"
             
             local cropInfo = cropSet[model.Name:lower()]
             local rarity = cropInfo and cropInfo.rarity or "Common"
             local color = rarityColors[rarity] or Color3.new(1,1,1)
             local hexColor = string.format("#%02X%02X%02X", math.floor(color.r * 255), math.floor(color.g * 255), math.floor(color.b * 255))
             
-            -- Format: "CropName - Weight kg - Price"
             local label = string.format(
                 "<font color='%s'>%s</font> - %s kg - <font color='#50FF50'>%s</font>",
                 hexColor, model.Name, weight, price
@@ -715,8 +666,8 @@ local function update()
             local espLabel = createESP(model, label)
             if espLabel then
                 espLabel.RichText = true
-                espLabel.TextSize = 10  -- Ensure text size stays consistent
-                espLabel.TextStrokeTransparency = 0.3  -- Ensure stroke stays the same
+                espLabel.TextSize = 10
+                espLabel.TextStrokeTransparency = 0.3
             end
             validModels[model] = true
         end
