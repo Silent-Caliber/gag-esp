@@ -92,9 +92,19 @@ spawn(function()
                 end
             end
         end
-        wait(5) -- Check every 5 seconds
+        wait(5)
     end
 end)
+
+-- === NUMBER FORMATTING FUNCTION ===
+local function formatPriceWithCommas(n)
+    local formatted = tostring(math.floor(n))
+    while true do
+        formatted, k = formatted:gsub("^(-?%d+)(%d%d%d)", "%1,%2")
+        if k == 0 then break end
+    end
+    return formatted .. "$"
+end
 
 -- === ESP CREATION ===
 local espMap = {}
@@ -132,7 +142,6 @@ local function createESP(model, labelText)
     return tl
 end
 
--- === CLEANUP OLD GUIs ===
 local function cleanup(validModels)
     for model, gui in pairs(espMap) do
         if not validModels[model] then
@@ -236,7 +245,7 @@ local function update()
             end
 
             -- Format label
-            local formattedPrice = price and price > 0 and tostring(math.floor(price)) or "?"
+            local formattedPrice = price and formatPriceWithCommas(price) or "?"
 
             local label = string.format(
                 "<font color='%s'>%s</font> - %s kg - <font color='#50FF50'>%s</font>",
@@ -263,9 +272,7 @@ spawn(function()
     end
 end)
 
--- === YOUR EXISTING UI CODE GOES HERE ===
--- [START OF ORIGINAL UI CODE]
-
+-- === UI SETUP ===
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PlantESPSelector"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
@@ -278,6 +285,7 @@ Frame.BackgroundTransparency = 0.3
 Frame.Active = true
 Frame.Draggable = true
 
+-- TitleBar
 local TitleBar = Instance.new("Frame", Frame)
 TitleBar.Size = UDim2.new(1, 0, 0, 22)
 TitleBar.Position = UDim2.new(0, 0, 0, 0)
@@ -294,6 +302,7 @@ Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 14
 
+-- LegendCol (Rarity Colors)
 local LegendCol = Instance.new("Frame", Frame)
 LegendCol.Size = UDim2.new(0, 65, 0, 174)
 LegendCol.Position = UDim2.new(0, 0, 0, 22)
@@ -324,6 +333,7 @@ for _, rarity in ipairs(rarityOrder) do
     label.TextSize = 12
 end
 
+-- ObtainCol (Obtainable Crops)
 local ObtainCol = Instance.new("Frame", Frame)
 ObtainCol.Size = UDim2.new(0, 120, 0, 174)
 ObtainCol.Position = UDim2.new(0, 65, 0, 22)
@@ -350,6 +360,7 @@ ObtainScroll.ScrollBarThickness = 4
 local ObtainListLayout = Instance.new("UIListLayout", ObtainScroll)
 ObtainListLayout.Padding = UDim.new(0, 1)
 
+-- UnobtainCol (Unobtainable Crops)
 local UnobtainCol = Instance.new("Frame", Frame)
 UnobtainCol.Size = UDim2.new(0, 120, 0, 174)
 UnobtainCol.Position = UDim2.new(0, 185, 0, 22)
@@ -376,6 +387,7 @@ UnobtainScroll.ScrollBarThickness = 4
 local UnobtainListLayout = Instance.new("UIListLayout", UnobtainScroll)
 UnobtainListLayout.Padding = UDim.new(0, 1)
 
+-- NearbyFrame (Nearby Plants List)
 NearbyFrame = Instance.new("Frame", Frame)
 NearbyFrame.Size = UDim2.new(0, 275, 0, 24)
 NearbyFrame.Position = UDim2.new(0, 65, 1, -76)
@@ -402,6 +414,7 @@ NearbyScroll.ScrollBarThickness = 2
 local NearbyListLayout = Instance.new("UIListLayout", NearbyScroll)
 NearbyListLayout.Padding = UDim.new(0, 1)
 
+-- InputFrame (Distance Settings)
 local InputFrame = Instance.new("Frame", Frame)
 InputFrame.Size = UDim2.new(0, 275, 0, 30)
 InputFrame.Position = UDim2.new(0, 65, 1, -42)
@@ -418,7 +431,6 @@ local inputBoxes = {}
 for i, labelName in ipairs(inputLabels) do
     local colWidth = 275 / #inputLabels
     local xPos = (i-1) * colWidth
-
     local label = Instance.new("TextLabel", InputFrame)
     label.Size = UDim2.new(0, colWidth, 0, 12)
     label.Position = UDim2.new(0, xPos, 0, 0)
@@ -462,7 +474,7 @@ for i, labelName in ipairs(inputLabels) do
     table.insert(inputBoxes, box)
 end
 
--- Toggles for plant categories
+-- Toggles for Crop Categories
 local function getCategorizedTypes()
     local cropsByCategory = {}
     for obtain, rarities in pairs(cropCategories) do
@@ -537,6 +549,7 @@ local function createToggles()
 end
 
 createToggles()
+
 spawn(function()
     while true do
         wait(10)
@@ -544,7 +557,7 @@ spawn(function()
     end
 end)
 
--- Toggle Button
+-- Toggle Button (Show/Hide UI)
 local function createToggleBtn(screenGui, frame)
     if screenGui:FindFirstChild("ShowHideESPBtn") then
         screenGui.ShowHideESPBtn:Destroy()
@@ -725,3 +738,11 @@ local function createSizeToggleBtn(frame)
 end
 
 local SizeToggleBtn = createSizeToggleBtn(Frame)
+
+-- Initialize Selected Types
+for _, crop in ipairs(cropCategories.Obtainable.Common) do
+    selectedTypes[crop] = true
+end
+for _, crop in ipairs(cropCategories.Unobtainable.Common) do
+    selectedTypes[crop] = true
+end
