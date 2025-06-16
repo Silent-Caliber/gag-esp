@@ -1,8 +1,11 @@
 -- === SERVICES ===
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local StarterGui = game:GetService("StarterGui")
 local GuiService = game:GetService("GuiService")
-local TweenService = game:GetService("TweenService")
+local TextService = game:GetService("TextService")
+local TweenService = game:GetService("TweenService") -- Added for notifications
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -10,301 +13,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local maxDistance = 25
 local maxESP = 5
 local nearbyDistance = 15
-local updateInterval = 1.5  -- Increased update interval
-
--- === CROP CATEGORIES & COLORS ===
-local cropCategories = {
-    Obtainable = {
-        Common = {"Carrot", "Strawberry"},
-        Uncommon = {"Blueberry", "Manuka Flower", "Orange Tulip", "Rose", "Lavender"},
-        Rare = {"Tomato", "Corn", "Dandelion", "Daffodil", "Nectarshade", "Raspberry", "Foxglove"},
-        Legendary = {"Watermelon", "Pumpkin", "Apple", "Bamboo", "Lilac", "Lumira"},
-        Mythical = {"Coconut", "Cactus", "Dragon Fruit", "Honeysuckle", "Mango", "Nectarine", "Peach", "Pineapple", "Pink Lily", "Purple Dahlia"},
-        Divine = {"Grape", "Mushroom", "Pepper", "Cacao", "Hive Fruit", "Sunflower"},
-        Prismatic = {"Beanstalk", "Ember Lily"},
-    },
-    Unobtainable = {
-        Common = {"Chocolate Carrot"},
-        Uncommon = {"Red Lollipop", "Nightshade"},
-        Rare = {"Candy Sunflower", "Mint", "Glowshroom", "Pear"},
-        Legendary = {"Cranberry", "Durian", "Easter Egg", "Papaya"},
-        Mythical = {"Celestiberry", "Blood Banana", "Moon Melon", "Eggplant", "Passionfruit", "Lemon", "Banana"},
-        Divine = {"Cherry Blossom", "Crimson Vine", "Candy Blossom", "Lotus", "Venus Fly Trap", "Cursed Fruit", "Soul Fruit", "Mega Mushroom", "Moon Blossom", "Moon Mango"},
-    }
-}
-
-local cropSet = {}
-for obtain, rarities in pairs(cropCategories) do
-    for rarity, crops in pairs(rarities) do
-        for _, crop in ipairs(crops) do
-            cropSet[crop:lower()] = {obtain=obtain, rarity=rarity}
-        end
-    end
-end
-
-local rarityOrder = {"Common","Uncommon","Rare","Legendary","Mythical","Divine","Prismatic"}
-local rarityColors = {
-    Common = Color3.fromRGB(180, 180, 180),
-    Uncommon = Color3.fromRGB(80, 200, 80),
-    Rare = Color3.fromRGB(80, 120, 255),
-    Legendary = Color3.fromRGB(255, 215, 0),
-    Mythical = Color3.fromRGB(255, 100, 255),
-    Divine = Color3.fromRGB(255, 90, 90),
-    Prismatic = Color3.fromRGB(100,255,255),
-}
-
--- === LOAD MODULES ===
-local CalculatePlantValue
-if ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("CalculatePlantValue") then
-    CalculatePlantValue = require(ReplicatedStorage.Modules.CalculatePlantValue)
-end
-
--- === UTILITY FUNCTIONS ===
-local function getPP(model)
-    if model.PrimaryPart then return model.PrimaryPart end
-    for _, c in ipairs(model:GetChildren()) do
-        if c:IsA("BasePart") then
-            model.PrimaryPart = c
-            return c
-        end
-    end
-    return nil
-end
-
--- === ADD MISSING VALUES TO PLANT MODELS ===
-local plantCheckDelay = 30  -- Increased frequency
-spawn(function()
-    while task.wait(plantCheckDelay) do
-        -- Only check if we're in a garden
-        if workspace:FindFirstChild("Garden") then
-            for _, model in ipairs(workspace.Garden:GetDescendants()) do
-                if model:IsA("Model") and cropSet[model.Name:lower()] then
-                    if not model:FindFirstChild("Item_String") then
-                        local itemString = Instance.new("StringValue", model)
-                        itemString.Name = "Item_String"
-                        itemString.Value = model.Name
-                    end
-
-                    if not model:FindFirstChild("Variant") then
-                        local variant = Instance.new("StringValue", model)
-                        variant.Name = "Variant"
-                        variant.Value = "Normal"
-                    end
-
-                    if not model:FindFirstChild("Weight") then
-                        local weight = Instance.new("NumberValue", model)
-                        weight.Name = "Weight"
-                        weight.Value = 3.4
-                    end
-                end
-            end
-        end
-    end
-end)
-
--- === NUMBER FORMATTING FUNCTION ===
-local function formatPriceWithCommas(n)
-    local formatted = tostring(math.floor(n))
-    while true do
-        formatted, k = formatted:gsub("^(-?%d+)(%d%d%d)", "%1,%2")
-        if k == 0 then break end
-    end
-    return formatted .. "$"
-end
-
--- === ESP CREATION ===
-local espMap = {}
-local lastUpdate = 0
-
-local function createESP(model, labelText)
-    if espMap[model] then
-        espMap[model].Text = labelText
-        return espMap[model]
-    end
-
-    local pp = getPP(model)
-    if not pp then return end
-
-    local bg = Instance.new("BillboardGui", model)
-    bg.Name = "PlantESP"
-    bg.Adornee = pp
-    bg.Size = UDim2.new(0, 200, 0, 16)
-    bg.StudsOffset = Vector3.new(0, 4, 0)
-    bg.AlwaysOnTop = true
-    bg.MaxDistance = 100  -- Only show within 100 studs
-
-    local tl = Instance.new("TextLabel", bg)
-    tl.Size = UDim2.new(1, 0, 1, 0)
-    tl.BackgroundTransparency = 1
-    tl.TextColor3 = Color3.new(1, 1, 1)
-    tl.Font = Enum.Font.FredokaOne
-    tl.TextSize = 10
-    tl.TextWrapped = false
-    tl.RichText = true
-    tl.Text = labelText
-    tl.TextStrokeColor3 = Color3.new(0, 0, 0)
-    tl.TextStrokeTransparency = 0.3
-    tl.TextXAlignment = Enum.TextXAlignment.Center
-
-    espMap[model] = tl
-    return tl
-end
-
-local function cleanup(validModels)
-    for model, gui in pairs(espMap) do
-        if not validModels[model] then
-            if gui.Parent then gui.Parent:Destroy() end
-            espMap[model] = nil
-        end
-    end
-end
-
--- === NEARBY PLANTS DISPLAY ===
-local NearbyFrame
-local NearbyScroll
-
-local function updateNearbyPlants()
-    if not NearbyScroll then return end
-    
-    -- Clear existing labels
-    for _, child in ipairs(NearbyScroll:GetChildren()) do
-        if child:IsA("TextLabel") then
-            child:Destroy()
-        end
-    end
-
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-
-    local found = {}
-    local count = 0
-    
-    -- Only scan the garden area for better performance
-    local garden = workspace:FindFirstChild("Garden")
-    if not garden then return end
-    
-    for _, model in ipairs(garden:GetDescendants()) do
-        if model:IsA("Model") and cropSet[model.Name:lower()] then
-            local pp = getPP(model)
-            if pp then
-                local dist = (pp.Position - root.Position).Magnitude
-                if dist <= nearbyDistance then
-                    table.insert(found, {model=model, dist=dist})
-                    count = count + 1
-                    if count > 30 then break end  -- Lowered limit to 30 plants
-                end
-            end
-        end
-    end
-
-    table.sort(found, function(a,b) return a.dist < b.dist end)
-
-    for _, entry in ipairs(found) do
-        local label = Instance.new("TextLabel", NearbyScroll)
-        label.Size = UDim2.new(1, -4, 0, 14)
-        label.BackgroundTransparency = 1
-        label.TextWrapped = false
-        label.TextScaled = false
-        label.ClipsDescendants = false
-        local cropInfo = cropSet[entry.model.Name:lower()]
-        local rarity = cropInfo and cropInfo.rarity or "Common"
-        label.TextColor3 = rarityColors[rarity] or Color3.new(1,1,1)
-        label.Font = Enum.Font.SourceSansBold
-        label.TextSize = 10
-        label.Text = string.format("%s (%.1f)", entry.model.Name, entry.dist)
-    end
-end
-
--- === MAIN UPDATE LOOP ===
-local selectedTypes = {}
-for _, v in pairs(cropSet) do
-    selectedTypes[v] = true
-end
-
-local function update()
-    local currentTime = tick()
-    if currentTime - lastUpdate < updateInterval then return end
-    lastUpdate = currentTime
-
-    local validModels = {}
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    local nearest = {}
-
-    if root then
-        -- Only scan garden area
-        local garden = workspace:FindFirstChild("Garden")
-        if not garden then
-            cleanup(validModels)
-            return 
-        end
-        
-        for _, model in ipairs(garden:GetDescendants()) do
-            if model:IsA("Model") and selectedTypes[model.Name] then
-                local pp = getPP(model)
-                if pp then
-                    local dist = (pp.Position - root.Position).Magnitude
-                    if dist <= maxDistance then
-                        table.insert(nearest, {model=model, dist=dist})
-                    end
-                end
-            end
-        end
-
-        table.sort(nearest, function(a,b) return a.dist < b.dist end)
-
-        for i = 1, math.min(#nearest, maxESP) do
-            local model = nearest[i].model
-
-            -- Get weight
-            local weightObj = model:FindFirstChild("Weight")
-            local weight = weightObj and weightObj.Value and string.format("%.1f", weightObj.Value) or "?"
-
-            -- Get rarity color
-            local cropInfo = cropSet[model.Name:lower()]
-            local rarity = cropInfo and cropInfo.rarity or "Common"
-            local color = rarityColors[rarity] or Color3.new(1,1,1)
-            local hexColor = string.format("#%02X%02X%02X", math.floor(color.r * 255), math.floor(color.g * 255), math.floor(color.b * 255))
-
-            -- Calculate price
-            local price
-            if CalculatePlantValue then
-                if typeof(CalculatePlantValue) == "table" and CalculatePlantValue.Calculate then
-                    price = CalculatePlantValue.Calculate(model)
-                elseif typeof(CalculatePlantValue) == "function" then
-                    price = CalculatePlantValue(model)
-                end
-            end
-
-            -- Format label
-            local formattedPrice = price and formatPriceWithCommas(price) or "?"
-
-            local label = string.format(
-                "<font color='%s'>%s</font> - %s kg - <font color='#50FF50'>%s</font>",
-                hexColor, model.Name, weight, formattedPrice
-            )
-
-            local espLabel = createESP(model, label)
-            if espLabel then
-                espLabel.RichText = true
-            end
-            validModels[model] = true
-        end
-    end
-
-    cleanup(validModels)
-    
-    -- Update nearby plants less frequently
-    if currentTime % 5 < 0.1 then  -- Update every 5 seconds
-        updateNearbyPlants()
-    end
-end
-
--- === RUN EVERY SECOND ===
-RunService.Heartbeat:Connect(function()
-    pcall(update)
-end)
 
 -- === NOTIFICATION SYSTEM ===
 local function showNotification(message)
@@ -386,6 +94,286 @@ local function showNotification(message)
     notification:Destroy()
 end
 
+-- === CROP CATEGORIES & COLORS ===
+local cropCategories = {
+    Obtainable = {
+        Common = {"Carrot", "Strawberry"},
+        Uncommon = {"Blueberry", "Manuka Flower", "Orange Tulip", "Rose", "Lavender"},
+        Rare = {"Tomato", "Corn", "Dandelion", "Daffodil", "Nectarshade", "Raspberry", "Foxglove"},
+        Legendary = {"Watermelon", "Pumpkin", "Apple", "Bamboo", "Lilac", "Lumira"},
+        Mythical = {"Coconut", "Cactus", "Dragon Fruit", "Honeysuckle", "Mango", "Nectarine", "Peach", "Pineapple", "Pink Lily", "Purple Dahlia"},
+        Divine = {"Grape", "Mushroom", "Pepper", "Cacao", "Hive Fruit", "Sunflower"},
+        Prismatic = {"Beanstalk", "Ember Lily"},
+    },
+    Unobtainable = {
+        Common = {"Chocolate Carrot"},
+        Uncommon = {"Red Lollipop", "Nightshade"},
+        Rare = {"Candy Sunflower", "Mint", "Glowshroom", "Pear"},
+        Legendary = {"Cranberry", "Durian", "Easter Egg", "Papaya"},
+        Mythical = {"Celestiberry", "Blood Banana", "Moon Melon", "Eggplant", "Passionfruit", "Lemon", "Banana"},
+        Divine = {"Cherry Blossom", "Crimson Vine", "Candy Blossom", "Lotus", "Venus Fly Trap", "Cursed Fruit", "Soul Fruit", "Mega Mushroom", "Moon Blossom", "Moon Mango"},
+    }
+}
+
+local cropSet = {}
+for obtain, rarities in pairs(cropCategories) do
+    for rarity, crops in pairs(rarities) do
+        for _, crop in ipairs(crops) do
+            cropSet[crop:lower()] = {obtain=obtain, rarity=rarity}
+        end
+    end
+end
+
+local rarityOrder = {"Common","Uncommon","Rare","Legendary","Mythical","Divine","Prismatic"}
+local rarityColors = {
+    Common = Color3.fromRGB(180, 180, 180),
+    Uncommon = Color3.fromRGB(80, 200, 80),
+    Rare = Color3.fromRGB(80, 120, 255),
+    Legendary = Color3.fromRGB(255, 215, 0),
+    Mythical = Color3.fromRGB(255, 100, 255),
+    Divine = Color3.fromRGB(255, 90, 90),
+    Prismatic = Color3.fromRGB(100,255,255),
+}
+
+-- === LOAD MODULES ===
+local CalculatePlantValue
+if ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("CalculatePlantValue") then
+    CalculatePlantValue = require(ReplicatedStorage.Modules.CalculatePlantValue)
+end
+
+-- === UTILITY FUNCTIONS ===
+local function getPP(model)
+    if model.PrimaryPart then return model.PrimaryPart end
+    for _, c in ipairs(model:GetChildren()) do
+        if c:IsA("BasePart") then
+            model.PrimaryPart = c
+            return c
+        end
+    end
+    return nil
+end
+
+-- === ADD MISSING VALUES TO PLANT MODELS ===
+local plantCheckDelay = 15  -- Reduce frequency
+spawn(function()
+    while task.wait(plantCheckDelay) do
+        for _, model in ipairs(workspace:GetDescendants()) do
+            if model:IsA("Model") and cropSet[model.Name:lower()] then
+                if not model:FindFirstChild("Item_String") then
+                    local itemString = Instance.new("StringValue", model)
+                    itemString.Name = "Item_String"
+                    itemString.Value = model.Name
+                end
+
+                if not model:FindFirstChild("Variant") then
+                    local variant = Instance.new("StringValue", model)
+                    variant.Name = "Variant"
+                    variant.Value = "Normal"
+                end
+
+                if not model:FindFirstChild("Weight") then
+                    local weight = Instance.new("NumberValue", model)
+                    weight.Name = "Weight"
+                    weight.Value = 3.4
+                end
+            end
+        end
+    end
+end)
+
+-- === NUMBER FORMATTING FUNCTION ===
+local function formatPriceWithCommas(n)
+    local formatted = tostring(math.floor(n))
+    while true do
+        formatted, k = formatted:gsub("^(-?%d+)(%d%d%d)", "%1,%2")
+        if k == 0 then break end
+    end
+    return formatted .. "$"
+end
+
+-- === ESP CREATION ===
+local espMap = {}
+local lastUpdate = 0
+local updateInterval = 1  -- Update every second
+
+local function createESP(model, labelText)
+    if espMap[model] then
+        espMap[model].Text = labelText
+        return espMap[model]
+    end
+
+    local pp = getPP(model)
+    if not pp then return end
+
+    local bg = Instance.new("BillboardGui", model)
+    bg.Name = "PlantESP"
+    bg.Adornee = pp
+    bg.Size = UDim2.new(0, 200, 0, 16)
+    bg.StudsOffset = Vector3.new(0, 4, 0)
+    bg.AlwaysOnTop = true
+    bg.MaxDistance = 100  -- Only show within 100 studs
+
+    local tl = Instance.new("TextLabel", bg)
+    tl.Size = UDim2.new(1, 0, 1, 0)
+    tl.BackgroundTransparency = 1
+    tl.TextColor3 = Color3.new(1, 1, 1)
+    tl.Font = Enum.Font.FredokaOne
+    tl.TextSize = 10
+    tl.TextWrapped = false
+    tl.RichText = true
+    tl.Text = labelText
+    tl.TextStrokeColor3 = Color3.new(0, 0, 0)
+    tl.TextStrokeTransparency = 0.3
+    tl.TextXAlignment = Enum.TextXAlignment.Center
+
+    espMap[model] = tl
+    return tl
+end
+
+local function cleanup(validModels)
+    for model, gui in pairs(espMap) do
+        if not validModels[model] then
+            if gui.Parent then gui.Parent:Destroy() end
+            espMap[model] = nil
+        end
+    end
+end
+
+-- === NEARBY PLANTS DISPLAY ===
+local NearbyFrame
+local NearbyScroll
+
+local function updateNearbyPlants()
+    if not NearbyScroll then return end
+    
+    -- Clear existing labels efficiently
+    for _, child in ipairs(NearbyScroll:GetChildren()) do
+        if child:IsA("TextLabel") then
+            child:Destroy()
+        end
+    end
+
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    local found = {}
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") and cropSet[model.Name:lower()] then
+            local pp = getPP(model)
+            if pp then
+                local dist = (pp.Position - root.Position).Magnitude
+                if dist <= nearbyDistance then
+                    table.insert(found, {model=model, dist=dist})
+                end
+            end
+        end
+    end
+
+    table.sort(found, function(a,b) return a.dist < b.dist end)
+
+    for _, entry in ipairs(found) do
+        local label = Instance.new("TextLabel", NearbyScroll)
+        label.Size = UDim2.new(1, -4, 0, 14)
+        label.BackgroundTransparency = 1
+        label.TextWrapped = false
+        label.TextScaled = false
+        label.ClipsDescendants = false
+        local cropInfo = cropSet[entry.model.Name:lower()]
+        local rarity = cropInfo and cropInfo.rarity or "Common"
+        label.TextColor3 = rarityColors[rarity] or Color3.new(1,1,1)
+        label.Font = Enum.Font.SourceSansBold
+        label.TextSize = 10
+        label.Text = string.format("%s (%.1f)", entry.model.Name, entry.dist)
+    end
+end
+
+-- === MAIN UPDATE LOOP ===
+local selectedTypes = {}
+for _, v in pairs(cropSet) do
+    selectedTypes[v] = true
+end
+
+local function update()
+    local currentTime = tick()
+    if currentTime - lastUpdate < updateInterval then return end
+    lastUpdate = currentTime
+
+    local validModels = {}
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    local nearest = {}
+
+    if root then
+        -- Optimized descendant scanning
+        local descendants = workspace:GetDescendants()
+        for i = 1, #descendants do
+            local model = descendants[i]
+            if model:IsA("Model") and selectedTypes[model.Name] then
+                local pp = getPP(model)
+                if pp then
+                    local dist = (pp.Position - root.Position).Magnitude
+                    if dist <= maxDistance then
+                        table.insert(nearest, {model=model, dist=dist})
+                    end
+                end
+            end
+        end
+
+        table.sort(nearest, function(a,b) return a.dist < b.dist end)
+
+        for i = 1, math.min(#nearest, maxESP) do
+            local model = nearest[i].model
+
+            -- Get weight
+            local weightObj = model:FindFirstChild("Weight")
+            local weight = weightObj and weightObj.Value and string.format("%.1f", weightObj.Value) or "?"
+
+            -- Get rarity color
+            local cropInfo = cropSet[model.Name:lower()]
+            local rarity = cropInfo and cropInfo.rarity or "Common"
+            local color = rarityColors[rarity] or Color3.new(1,1,1)
+            local hexColor = string.format("#%02X%02X%02X", math.floor(color.r * 255), math.floor(color.g * 255), math.floor(color.b * 255))
+
+            -- Calculate price
+            local price
+            if CalculatePlantValue then
+                if typeof(CalculatePlantValue) == "table" and CalculatePlantValue.Calculate then
+                    price = CalculatePlantValue.Calculate(model)
+                elseif typeof(CalculatePlantValue) == "function" then
+                    price = CalculatePlantValue(model)
+                end
+            end
+
+            -- Format label
+            local formattedPrice = price and formatPriceWithCommas(price) or "?"
+
+            local label = string.format(
+                "<font color='%s'>%s</font> - %s kg - <font color='#50FF50'>%s</font>",
+                hexColor, model.Name, weight, formattedPrice
+            )
+
+            local espLabel = createESP(model, label)
+            if espLabel then
+                espLabel.RichText = true
+            end
+            validModels[model] = true
+        end
+    end
+
+    cleanup(validModels)
+    
+    -- Update nearby plants less frequently to reduce lag
+    if currentTime % 3 < 0.1 then  -- Update every 3 seconds
+        updateNearbyPlants()
+    end
+end
+
+-- === RUN EVERY SECOND ===
+RunService.Heartbeat:Connect(function()
+    pcall(update)
+end)
+
 -- === UI SETUP ===
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PlantESPSelector"
@@ -407,7 +395,7 @@ TitleBar.BackgroundTransparency = 0.25
 TitleBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TitleBar.BorderSizePixel = 0
 
--- Discord Button
+-- Discord Button - Fixed version with reliable method
 local DiscordBtn = Instance.new("TextButton", TitleBar)
 DiscordBtn.Size = UDim2.new(0, 60, 0, 18)
 DiscordBtn.Position = UDim2.new(0, 4, 0.5, -9)
@@ -419,24 +407,25 @@ DiscordBtn.TextSize = 10
 DiscordBtn.AutoButtonColor = false
 DiscordBtn.BorderSizePixel = 2
 DiscordBtn.BorderColor3 = Color3.fromRGB(255, 50, 50)
-DiscordBtn.ZIndex = 20
+DiscordBtn.ZIndex = 20  -- Ensure it's on top
 
 local DiscordCorner = Instance.new("UICorner", DiscordBtn)
 DiscordCorner.CornerRadius = UDim.new(0, 4)
 
+-- Universal Discord button function that works on all devices
 DiscordBtn.MouseButton1Click:Connect(function()
     pcall(function()
         -- Show notification
         showNotification("Joining PUNK TEAM Discord...")
         
-        -- Try opening browser
+        -- Try all possible methods
         local success = pcall(function()
             GuiService:OpenBrowserWindow("https://discord.gg/JxEjAtdgWD")
         end)
         
         if not success then
             success = pcall(function()
-                game:GetService("StarterGui"):SetCore("OpenBrowserWindow", {
+                StarterGui:SetCore("OpenBrowserWindow", {
                     URL = "https://discord.gg/JxEjAtdgWD"
                 })
             end)
@@ -656,14 +645,11 @@ local function getCategorizedTypes()
         end
     end
 
-    -- Only check if we're in a garden
-    if workspace:FindFirstChild("Garden") then
-        for _, model in ipairs(workspace.Garden:GetDescendants()) do
-            if model:IsA("Model") then
-                local info = cropSet[model.Name:lower()]
-                if info then
-                    cropsByCategory[info.obtain][info.rarity][model.Name] = true
-                end
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") then
+            local info = cropSet[model.Name:lower()]
+            if info then
+                cropsByCategory[info.obtain][info.rarity][model.Name] = true
             end
         end
     end
@@ -726,7 +712,7 @@ end
 createToggles()
 
 spawn(function()
-    while task.wait(15) do  -- Reduced toggle update frequency
+    while task.wait(10) do
         createToggles()
     end
 end)
@@ -861,12 +847,14 @@ local function createSizeToggleBtn(frame)
                 if b:IsA("TextButton") then
                     b.TextSize = 8
                     b.TextWrapped = true
+                    b.TextScaled = false
                 end
             end
             for _, b in ipairs(UnobtainScroll:GetChildren()) do
                 if b:IsA("TextButton") then
                     b.TextSize = 8
                     b.TextWrapped = true
+                    b.TextScaled = false
                 end
             end
 
