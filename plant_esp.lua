@@ -532,6 +532,37 @@ end
 
 local SizeToggleBtn = createSizeToggleBtn(Frame)
 
+-- Helper function to find plant data
+local function findPlantData(model, name)
+    -- Check direct children first
+    local child = model:FindFirstChild(name)
+    if child then return child end
+    
+    -- Check in Config folder
+    local config = model:FindFirstChild("Config")
+    if config then
+        child = config:FindFirstChild(name)
+        if child then return child end
+    end
+    
+    -- Recursive search
+    for _, descendant in ipairs(model:GetDescendants()) do
+        if descendant.Name == name then
+            return descendant
+        end
+    end
+    
+    -- Check attributes
+    if model:GetAttribute(name) then
+        local valueObj = Instance.new("StringValue")
+        valueObj.Name = name
+        valueObj.Value = tostring(model:GetAttribute(name))
+        return valueObj
+    end
+    
+    return nil
+end
+
 local function getPP(model)
     if model.PrimaryPart then return model.PrimaryPart end
     for _,c in ipairs(model:GetChildren()) do
@@ -567,6 +598,7 @@ local function createESP(model, labelText)
     tl.RichText = true
     tl.Text = labelText
     
+    -- Maintain consistent text styling
     tl.TextStrokeColor3 = Color3.new(0, 0, 0)
     tl.TextStrokeTransparency = 0.3
     tl.TextXAlignment = Enum.TextXAlignment.Center
@@ -637,12 +669,36 @@ local function update()
         table.sort(nearest, function(a, b) return a.dist < b.dist end)
         for i = 1, math.min(#nearest, maxESP) do
             local model = nearest[i].model
-            local weight
-            for _, child in ipairs(model:GetChildren()) do
-                if child:IsA("NumberValue") and child.Name:lower():find("weight") then
-                    weight = string.format("%.1f", child.Value)
-                    break
+            
+            -- Find required plant data
+            local itemString = findPlantData(model, "Item_String")
+            local variant = findPlantData(model, "Variant")
+            local weightVal = findPlantData(model, "Weight")
+            
+            local weight = weightVal and string.format("%.1f", weightVal.Value) or "N/A"
+            local price = "N/A"
+            
+            -- Calculate price if we have required data
+            if itemString and variant and weightVal then
+                -- Create temporary container for calculation
+                local tempModel = Instance.new("Model")
+                itemString:Clone().Parent = tempModel
+                variant:Clone().Parent = tempModel
+                weightVal:Clone().Parent = tempModel
+                
+                -- Copy attributes for mutation calculation
+                for attrName, attrValue in pairs(model:GetAttributes()) do
+                    tempModel:SetAttribute(attrName, attrValue)
                 end
+                
+                -- Calculate price
+                if CalculatePlantValue and type(CalculatePlantValue) == "function" then
+                    local success, result = pcall(CalculatePlantValue, tempModel)
+                    if success then
+                        price = tostring(result)
+                    end
+                end
+                tempModel:Destroy()
             end
             
             local cropInfo = cropSet[model.Name:lower()]
@@ -650,34 +706,17 @@ local function update()
             local color = rarityColors[rarity] or Color3.new(1,1,1)
             local hexColor = string.format("#%02X%02X%02X", math.floor(color.r * 255), math.floor(color.g * 255), math.floor(color.b * 255))
             
-            local price
-            if CalculatePlantValue and typeof(CalculatePlantValue) == "table" and CalculatePlantValue.Calculate then
-                price = CalculatePlantValue.Calculate(model)
-            elseif CalculatePlantValue and typeof(CalculatePlantValue) == "function" then
-                price = CalculatePlantValue(model)
-            end
-
             -- Format: "CropName - Weight kg - Price"
-            local label
-            if weight and price then
-                label = string.format(
-                    "<font color='%s'>%s</font> - %s kg - <font color='#50FF50'>%s</font>",
-                    hexColor, model.Name, weight, tostring(price))
-            elseif weight then
-                label = string.format(
-                    "<font color='%s'>%s</font> - %s kg",
-                    hexColor, model.Name, weight)
-            elseif price then
-                label = string.format(
-                    "<font color='%s'>%s</font> - <font color='#50FF50'>%s</font>",
-                    hexColor, model.Name, tostring(price))
-            else
-                label = string.format("<font color='%s'>%s</font>", hexColor, model.Name)
-            end
-
+            local label = string.format(
+                "<font color='%s'>%s</font> - %s kg - <font color='#50FF50'>%s</font>",
+                hexColor, model.Name, weight, price
+            )
+            
             local espLabel = createESP(model, label)
             if espLabel then
                 espLabel.RichText = true
+                espLabel.TextSize = 10  -- Ensure text size stays consistent
+                espLabel.TextStrokeTransparency = 0.3  -- Ensure stroke stays the same
             end
             validModels[model] = true
         end
