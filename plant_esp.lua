@@ -2,6 +2,7 @@
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
+local StarterGui = game:GetService("StarterGui")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -188,6 +189,9 @@ local function updateNearbyPlants()
         local label = Instance.new("TextLabel", NearbyScroll)
         label.Size = UDim2.new(1, -4, 0, 14)
         label.BackgroundTransparency = 1
+        label.TextWrapped = false
+        label.TextScaled = false
+        label.ClipsDescendants = false
         local cropInfo = cropSet[entry.model.Name:lower()]
         local rarity = cropInfo and cropInfo.rarity or "Common"
         label.TextColor3 = rarityColors[rarity] or Color3.new(1,1,1)
@@ -311,13 +315,11 @@ local DiscordCorner = Instance.new("UICorner", DiscordBtn)
 DiscordCorner.CornerRadius = UDim.new(0, 4)
 
 DiscordBtn.MouseButton1Click:Connect(function()
-    local success, err = pcall(function()
-        local discordUrl = "https://discord.gg/JxEjAtdgWD"
-        HttpService:GetAsync(discordUrl, true)
+    pcall(function()
+        StarterGui:SetCore("OpenBrowserWindow", {
+            URL = "https://discord.gg/JxEjAtdgWD"
+        })
     end)
-    if not success then
-        warn("Couldn't open Discord link: " .. err)
-    end
 end)
 
 DiscordBtn.MouseEnter:Connect(function()
@@ -330,8 +332,8 @@ end)
 
 -- Title (adjusted position)
 local Title = Instance.new("TextLabel", TitleBar)
-Title.Size = UDim2.new(1, -70, 1, 0)
-Title.Position = UDim2.new(0, 65, 0, 0)
+Title.Size = UDim2.new(1, -80, 1, 0)  -- Increased right margin
+Title.Position = UDim2.new(0, 70, 0, 0)  -- Moved right
 Title.BackgroundTransparency = 1
 Title.Text = "PUNK TEAM Grow A Garden ESP"
 Title.TextColor3 = Color3.new(1, 1, 1)
@@ -708,11 +710,15 @@ local function createSizeToggleBtn(frame)
             for _, b in ipairs(ObtainScroll:GetChildren()) do
                 if b:IsA("TextButton") then
                     b.TextSize = 8
+                    b.TextWrapped = true
+                    b.TextScaled = false
                 end
             end
             for _, b in ipairs(UnobtainScroll:GetChildren()) do
                 if b:IsA("TextButton") then
                     b.TextSize = 8
+                    b.TextWrapped = true
+                    b.TextScaled = false
                 end
             end
 
@@ -745,8 +751,8 @@ local function createSizeToggleBtn(frame)
             DiscordBtn.TextSize = 10
             DiscordBtn.Position = UDim2.new(0, 4, 0.5, -9)
             Title.TextSize = 14
-            Title.Position = UDim2.new(0, 65, 0, 0)
-            Title.Size = UDim2.new(1, -70, 1, 0)
+            Title.Position = UDim2.new(0, 70, 0, 0)  -- Adjusted position
+            Title.Size = UDim2.new(1, -80, 1, 0)  -- Adjusted size
 
             LegendLabel.TextSize = 12
             ObtainLabel.TextSize = 12
@@ -766,11 +772,13 @@ local function createSizeToggleBtn(frame)
             for _, b in ipairs(ObtainScroll:GetChildren()) do
                 if b:IsA("TextButton") then
                     b.TextSize = 10
+                    b.TextWrapped = false
                 end
             end
             for _, b in ipairs(UnobtainScroll:GetChildren()) do
                 if b:IsA("TextButton") then
                     b.TextSize = 10
+                    b.TextWrapped = false
                 end
             end
 
