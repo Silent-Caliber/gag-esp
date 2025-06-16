@@ -45,9 +45,28 @@ local rarityColors = {
 
 local CalculatePlantValue = require(game:GetService("ReplicatedStorage").Modules.CalculatePlantValue)
 
--- UI Sizes
+local function getCategorizedTypes()
+    local cropsByCategory = {}
+    for obtain, rarities in pairs(cropCategories) do
+        cropsByCategory[obtain] = {}
+        for rarity, _ in pairs(rarities) do
+            cropsByCategory[obtain][rarity] = {}
+        end
+    end
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") then
+            local info = cropSet[model.Name:lower()]
+            if info then
+                cropsByCategory[info.obtain][info.rarity][model.Name] = true
+            end
+        end
+    end
+    return cropsByCategory
+end
+
+-- UI Sizes (adjusted for perfect square in compact mode)
 local normalSize = UDim2.new(0, 340, 0, 250)
-local compactSize = UDim2.new(0, 160, 0, 160)
+local compactSize = UDim2.new(0, 160, 0, 160) -- Square size
 local normalPos = UDim2.new(0, 10, 0, 60)
 local compactPos = UDim2.new(0, 10, 0, 20)
 
@@ -384,18 +403,25 @@ local function createSizeToggleBtn(frame)
     btn.MouseButton1Click:Connect(function()
         compact = not compact
         if compact then
+            -- Square layout
             frame.Size = compactSize
             frame.Position = compactPos
+            
+            -- Adjust columns to fit square
             LegendCol.Size = UDim2.new(0, 50, 0, 100)
             LegendCol.Position = UDim2.new(0, 0, 0, 22)
             ObtainCol.Size = UDim2.new(0, 50, 0, 100)
             ObtainCol.Position = UDim2.new(0, 50, 0, 22)
             UnobtainCol.Size = UDim2.new(0, 50, 0, 100)
             UnobtainCol.Position = UDim2.new(0, 100, 0, 22)
+            
+            -- Move bottom frames to fit square
             NearbyFrame.Size = UDim2.new(0, 150, 0, 18)
             NearbyFrame.Position = UDim2.new(0, 0, 1, -38)
             InputFrame.Size = UDim2.new(0, 150, 0, 16)
             InputFrame.Position = UDim2.new(0, 0, 1, -20)
+            
+            -- Update text sizes for compact mode
             Title.TextSize = 10
             LegendLabel.TextSize = 9
             ObtainLabel.TextSize = 9
@@ -428,6 +454,7 @@ local function createSizeToggleBtn(frame)
                 end
             end
             
+            -- Adjust input boxes to fit square
             local colWidth = 150 / #inputLabels
             for i, label in ipairs(inputLabelsTbl) do
                 label.Size = UDim2.new(0, colWidth, 0, 8)
@@ -439,6 +466,7 @@ local function createSizeToggleBtn(frame)
                 box.Position = UDim2.new(0, (i-1)*colWidth + 2, 0, 8)
             end
         else
+            -- Normal layout
             frame.Size = normalSize
             frame.Position = normalPos
             LegendCol.Size = UDim2.new(0, 65, 0, 174)
@@ -451,6 +479,8 @@ local function createSizeToggleBtn(frame)
             NearbyFrame.Position = UDim2.new(0, 65, 1, -76)
             InputFrame.Size = UDim2.new(0, 275, 0, 30)
             InputFrame.Position = UDim2.new(0, 65, 1, -42)
+            
+            -- Restore text sizes
             Title.TextSize = 14
             LegendLabel.TextSize = 12
             ObtainLabel.TextSize = 12
@@ -483,6 +513,7 @@ local function createSizeToggleBtn(frame)
                 end
             end
             
+            -- Restore input box positions
             local colWidth = 275 / #inputLabels
             for i, label in ipairs(inputLabelsTbl) do
                 label.Size = UDim2.new(0, colWidth, 0, 12)
@@ -500,25 +531,6 @@ local function createSizeToggleBtn(frame)
 end
 
 local SizeToggleBtn = createSizeToggleBtn(Frame)
-
-local function getCategorizedTypes()
-    local cropsByCategory = {}
-    for obtain, rarities in pairs(cropCategories) do
-        cropsByCategory[obtain] = {}
-        for rarity, _ in pairs(rarities) do
-            cropsByCategory[obtain][rarity] = {}
-        end
-    end
-    for _, model in ipairs(workspace:GetDescendants()) do
-        if model:IsA("Model") then
-            local info = cropSet[model.Name:lower()]
-            if info then
-                cropsByCategory[info.obtain][info.rarity][model.Name] = true
-            end
-        end
-    end
-    return cropsByCategory
-end
 
 local function getPP(model)
     if model.PrimaryPart then return model.PrimaryPart end
@@ -554,6 +566,7 @@ local function createESP(model, labelText)
     tl.TextWrapped = false
     tl.RichText = true
     tl.Text = labelText
+    
     tl.TextStrokeColor3 = Color3.new(0, 0, 0)
     tl.TextStrokeTransparency = 0.3
     tl.TextXAlignment = Enum.TextXAlignment.Center
@@ -604,81 +617,6 @@ local function updateNearbyPlants()
     end
 end
 
--- GUARANTEED VALUE CALCULATION
-local function getPlantValue(model)
-    -- Get required properties
-    local itemString = model:GetAttribute("Item_String") or 
-                      (model:FindFirstChild("Item_String") and model.Item_String.Value) or 
-                      model.Name
-    
-    local variant = model:GetAttribute("Variant") or 
-                   (model:FindFirstChild("Variant") and model.Variant.Value) or 
-                   1
-    
-    local weight = model:GetAttribute("Weight") or 
-                  (model:FindFirstChild("Weight") and model.Weight.Value) or 
-                  1
-    
-    -- Get optional properties
-    local mutation = model:GetAttribute("Mutation") or 
-                    (model:FindFirstChild("Mutation") and model.Mutation.Value) or 
-                    nil
-    
-    local nectar = model:GetAttribute("Nectar") or 
-                  (model:FindFirstChild("Nectar") and model.Nectar.Value) or 
-                  nil
-    
-    local nectarLevel = model:GetAttribute("NectarLevel") or 
-                       (model:FindFirstChild("NectarLevel") and model.NectarLevel.Value) or 
-                       nil
-    
-    -- Create temporary model with all required properties
-    local tempModel = Instance.new("Model")
-    
-    -- Add required values
-    local itemValue = Instance.new("StringValue")
-    itemValue.Name = "Item_String"
-    itemValue.Value = itemString
-    itemValue.Parent = tempModel
-    
-    local variantValue = Instance.new("StringValue")
-    variantValue.Name = "Variant"
-    variantValue.Value = tostring(variant)
-    variantValue.Parent = tempModel
-    
-    local weightValue = Instance.new("NumberValue")
-    weightValue.Name = "Weight"
-    weightValue.Value = tonumber(weight)
-    weightValue.Parent = tempModel
-    
-    -- Add optional attributes
-    if mutation then
-        tempModel:SetAttribute("Mutation", mutation)
-    end
-    
-    if nectar then
-        tempModel:SetAttribute("Nectar", nectar)
-    end
-    
-    if nectarLevel then
-        tempModel:SetAttribute("NectarLevel", nectarLevel)
-    end
-    
-    -- Calculate value
-    local success, value = pcall(function()
-        return CalculatePlantValue(tempModel)
-    end)
-    
-    -- Clean up
-    tempModel:Destroy()
-    
-    if success then
-        return tostring(value)
-    else
-        return "Err"
-    end
-end
-
 local function update()
     local validModels = {}
     local char = LocalPlayer.Character
@@ -699,24 +637,47 @@ local function update()
         table.sort(nearest, function(a, b) return a.dist < b.dist end)
         for i = 1, math.min(#nearest, maxESP) do
             local model = nearest[i].model
-            local price = getPlantValue(model)
-            local weight = model:GetAttribute("Weight") or (model:FindFirstChild("Weight") and model.Weight.Value) or "N/A"
+            local weight
+            for _, child in ipairs(model:GetChildren()) do
+                if child:IsA("NumberValue") and child.Name:lower():find("weight") then
+                    weight = string.format("%.1f", child.Value)
+                    break
+                end
+            end
             
             local cropInfo = cropSet[model.Name:lower()]
             local rarity = cropInfo and cropInfo.rarity or "Common"
             local color = rarityColors[rarity] or Color3.new(1,1,1)
             local hexColor = string.format("#%02X%02X%02X", math.floor(color.r * 255), math.floor(color.g * 255), math.floor(color.b * 255))
             
-            local label = string.format(
-                "<font color='%s'>%s</font> - %s kg - <font color='#50FF50'>%s</font>",
-                hexColor, model.Name, weight, price
-            )
-            
+            local price
+            if CalculatePlantValue and typeof(CalculatePlantValue) == "table" and CalculatePlantValue.Calculate then
+                price = CalculatePlantValue.Calculate(model)
+            elseif CalculatePlantValue and typeof(CalculatePlantValue) == "function" then
+                price = CalculatePlantValue(model)
+            end
+
+            -- Format: "CropName - Weight kg - Price"
+            local label
+            if weight and price then
+                label = string.format(
+                    "<font color='%s'>%s</font> - %s kg - <font color='#50FF50'>%s</font>",
+                    hexColor, model.Name, weight, tostring(price))
+            elseif weight then
+                label = string.format(
+                    "<font color='%s'>%s</font> - %s kg",
+                    hexColor, model.Name, weight)
+            elseif price then
+                label = string.format(
+                    "<font color='%s'>%s</font> - <font color='#50FF50'>%s</font>",
+                    hexColor, model.Name, tostring(price))
+            else
+                label = string.format("<font color='%s'>%s</font>", hexColor, model.Name)
+            end
+
             local espLabel = createESP(model, label)
             if espLabel then
                 espLabel.RichText = true
-                espLabel.TextSize = 10
-                espLabel.TextStrokeTransparency = 0.3
             end
             validModels[model] = true
         end
