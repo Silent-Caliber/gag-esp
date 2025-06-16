@@ -54,7 +54,10 @@ local rarityColors = {
 }
 
 -- === LOAD MODULES ===
-local CalculatePlantValue = require(ReplicatedStorage.Modules.CalculatePlantValue)
+local CalculatePlantValue
+if ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("CalculatePlantValue") then
+    CalculatePlantValue = require(ReplicatedStorage.Modules.CalculatePlantValue)
+end
 
 -- === UTILITY FUNCTIONS ===
 local function getPP(model)
@@ -69,25 +72,23 @@ local function getPP(model)
 end
 
 -- === ADD MISSING VALUES TO PLANT MODELS ===
+local plantCheckDelay = 10  -- Reduce frequency
 spawn(function()
-    while true do
+    while task.wait(plantCheckDelay) do
         for _, model in ipairs(workspace:GetDescendants()) do
             if model:IsA("Model") and cropSet[model.Name:lower()] then
-                -- Add Item_String
                 if not model:FindFirstChild("Item_String") then
                     local itemString = Instance.new("StringValue", model)
                     itemString.Name = "Item_String"
                     itemString.Value = model.Name
                 end
 
-                -- Add Variant
                 if not model:FindFirstChild("Variant") then
                     local variant = Instance.new("StringValue", model)
                     variant.Name = "Variant"
                     variant.Value = "Normal"
                 end
 
-                -- Add Weight
                 if not model:FindFirstChild("Weight") then
                     local weight = Instance.new("NumberValue", model)
                     weight.Name = "Weight"
@@ -95,7 +96,6 @@ spawn(function()
                 end
             end
         end
-        wait(5)
     end
 end)
 
@@ -111,6 +111,8 @@ end
 
 -- === ESP CREATION ===
 local espMap = {}
+local lastUpdate = 0
+local updateInterval = 1  -- Update every second
 
 local function createESP(model, labelText)
     if espMap[model] then
@@ -159,12 +161,13 @@ local NearbyFrame
 local NearbyScroll
 
 local function updateNearbyPlants()
-    if NearbyScroll then
-        for _, child in ipairs(NearbyScroll:GetChildren()) do
-            if child:IsA("TextLabel") then child:Destroy() end
+    if not NearbyScroll then return end
+    
+    -- Clear existing labels efficiently
+    for _, child in ipairs(NearbyScroll:GetChildren()) do
+        if child:IsA("TextLabel") then
+            child:Destroy()
         end
-    else
-        return
     end
 
     local char = LocalPlayer.Character
@@ -209,6 +212,10 @@ for _, v in pairs(cropSet) do
 end
 
 local function update()
+    local currentTime = tick()
+    if currentTime - lastUpdate < updateInterval then return end
+    lastUpdate = currentTime
+
     local validModels = {}
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -244,10 +251,12 @@ local function update()
 
             -- Calculate price
             local price
-            if CalculatePlantValue and typeof(CalculatePlantValue) == "table" and CalculatePlantValue.Calculate then
-                price = CalculatePlantValue.Calculate(model)
-            elseif CalculatePlantValue and typeof(CalculatePlantValue) == "function" then
-                price = CalculatePlantValue(model)
+            if CalculatePlantValue then
+                if typeof(CalculatePlantValue) == "table" and CalculatePlantValue.Calculate then
+                    price = CalculatePlantValue.Calculate(model)
+                elseif typeof(CalculatePlantValue) == "function" then
+                    price = CalculatePlantValue(model)
+                end
             end
 
             -- Format label
@@ -271,11 +280,8 @@ local function update()
 end
 
 -- === RUN EVERY SECOND ===
-spawn(function()
-    while true do
-        pcall(update)
-        wait(1)
-    end
+RunService.Heartbeat:Connect(function()
+    pcall(update)
 end)
 
 -- === UI SETUP ===
@@ -299,7 +305,7 @@ TitleBar.BackgroundTransparency = 0.25
 TitleBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TitleBar.BorderSizePixel = 0
 
--- Discord Button
+-- Discord Button - Fixed version
 local DiscordBtn = Instance.new("TextButton", TitleBar)
 DiscordBtn.Size = UDim2.new(0, 60, 0, 18)
 DiscordBtn.Position = UDim2.new(0, 4, 0.5, -9)
@@ -329,12 +335,12 @@ DiscordBtn.MouseLeave:Connect(function()
     DiscordBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 end)
 
--- Title (adjusted position)
+-- Title
 local Title = Instance.new("TextLabel", TitleBar)
 Title.Size = UDim2.new(1, -80, 1, 0)
 Title.Position = UDim2.new(0, 70, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "PUNK TEAM Grow Garden ESP"  -- Shortened title
+Title.Text = "PUNK TEAM Grow Garden ESP"
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 14
@@ -361,25 +367,17 @@ local LegendListLayout = Instance.new("UIListLayout", LegendCol)
 LegendListLayout.Padding = UDim.new(0, 2)
 LegendListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- Create rarity labels with abbreviations
-local rarityAbbreviations = {
-    Common = "Com",
-    Uncommon = "Unc",
-    Rare = "Rare",
-    Legendary = "Leg",
-    Mythical = "Myth",
-    Divine = "Div",
-    Prismatic = "Prism"
-}
-
+-- Create rarity labels with full names
+local rarityFullNames = {}
 for _, rarity in ipairs(rarityOrder) do
     local label = Instance.new("TextLabel", LegendCol)
     label.Size = UDim2.new(1, 0, 0, 14)
     label.BackgroundTransparency = 1
-    label.Text = rarityAbbreviations[rarity] or rarity
+    label.Text = rarity
     label.TextColor3 = rarityColors[rarity]
     label.Font = Enum.Font.SourceSansBold
     label.TextSize = 12
+    rarityFullNames[rarity] = label
 end
 
 -- ObtainCol (Obtainable Crops)
@@ -600,8 +598,7 @@ end
 createToggles()
 
 spawn(function()
-    while true do
-        wait(10)
+    while task.wait(10) do
         createToggles()
     end
 end)
@@ -698,7 +695,7 @@ local function createSizeToggleBtn(frame)
             DiscordBtn.Size = UDim2.new(0, 50, 0, 15)
             DiscordBtn.TextSize = 8
             DiscordBtn.Position = UDim2.new(0, 2, 0.5, -7.5)
-            Title.Text = "PUNK TEAM ESP"  -- Shorter title in compact mode
+            Title.Text = "PUNK TEAM ESP"
             Title.TextSize = 10
             Title.Position = UDim2.new(0, 52, 0, 0)
             Title.Size = UDim2.new(1, -55, 1, 0)
@@ -707,11 +704,25 @@ local function createSizeToggleBtn(frame)
             ObtainLabel.TextSize = 9
             UnobtainLabel.TextSize = 9
             NearbyLabel.TextSize = 8
-            for _, child in ipairs(LegendCol:GetChildren()) do
-                if child:IsA("TextLabel") and child ~= LegendLabel then
-                    child.TextSize = 8
+            
+            -- Change rarity names to abbreviations in compact mode
+            local rarityAbbreviations = {
+                Common = "Com",
+                Uncommon = "Unc",
+                Rare = "Rare",
+                Legendary = "Leg",
+                Mythical = "Myth",
+                Divine = "Div",
+                Prismatic = "Prism"
+            }
+            
+            for _, rarity in ipairs(rarityOrder) do
+                if rarityFullNames[rarity] then
+                    rarityFullNames[rarity].Text = rarityAbbreviations[rarity] or rarity
+                    rarityFullNames[rarity].TextSize = 9
                 end
             end
+            
             for i, label in ipairs(inputLabelsTbl) do
                 label.TextSize = 8
             end
@@ -761,7 +772,7 @@ local function createSizeToggleBtn(frame)
             DiscordBtn.Size = UDim2.new(0, 60, 0, 18)
             DiscordBtn.TextSize = 10
             DiscordBtn.Position = UDim2.new(0, 4, 0.5, -9)
-            Title.Text = "PUNK TEAM Grow Garden ESP"  -- Restored title
+            Title.Text = "PUNK TEAM Grow Garden ESP"
             Title.TextSize = 14
             Title.Position = UDim2.new(0, 70, 0, 0)
             Title.Size = UDim2.new(1, -80, 1, 0)
@@ -770,11 +781,15 @@ local function createSizeToggleBtn(frame)
             ObtainLabel.TextSize = 12
             UnobtainLabel.TextSize = 12
             NearbyLabel.TextSize = 11
-            for _, child in ipairs(LegendCol:GetChildren()) do
-                if child:IsA("TextLabel") and child ~= LegendLabel then
-                    child.TextSize = 12
+            
+            -- Restore full rarity names
+            for _, rarity in ipairs(rarityOrder) do
+                if rarityFullNames[rarity] then
+                    rarityFullNames[rarity].Text = rarity
+                    rarityFullNames[rarity].TextSize = 12
                 end
             end
+            
             for i, label in ipairs(inputLabelsTbl) do
                 label.TextSize = 11
             end
