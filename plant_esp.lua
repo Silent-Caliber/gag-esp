@@ -6,7 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- === CONFIG ===
 local maxDistance = 25
-local maxESP = 10
+local maxESP = 5
 local nearbyDistance = 15
 
 -- === CROP CATEGORIES & COLORS ===
@@ -210,13 +210,7 @@ local function update()
 
     if root then
         for _, model in ipairs(workspace:GetDescendants()) do
-            -- Only process models with required properties
-            if model:IsA("Model") 
-                and selectedTypes[model.Name] 
-                and model:FindFirstChild("Item_String") 
-                and model:FindFirstChild("Variant") 
-                and model:FindFirstChild("Weight") then
-
+            if model:IsA("Model") and selectedTypes[model.Name] then
                 local pp = getPP(model)
                 if pp then
                     local dist = (pp.Position - root.Position).Magnitude
@@ -234,7 +228,7 @@ local function update()
 
             -- Get weight
             local weightObj = model:FindFirstChild("Weight")
-            local weight = weightObj and string.format("%.1f", weightObj.Value) or "?"
+            local weight = weightObj and weightObj.Value and string.format("%.1f", weightObj.Value) or "?"
 
             -- Get rarity color
             local cropInfo = cropSet[model.Name:lower()]
@@ -442,7 +436,7 @@ for i, labelName in ipairs(inputLabels) do
     label.Position = UDim2.new(0, xPos, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = labelName
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextColor3 = Color3.fromRGB(255,255,255)
     label.Font = Enum.Font.SourceSansBold
     label.TextSize = 11
     label.TextXAlignment = Enum.TextXAlignment.Center
@@ -576,7 +570,7 @@ local function createToggleBtn(screenGui, frame)
     ToggleBtn.Position = UDim2.new(0, 6, 0, 6)
     ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
-    ToggleBtn.Text = "✖"
+    ToggleBtn.Text = "❌"
     ToggleBtn.Font = Enum.Font.SourceSansBold
     ToggleBtn.TextSize = 22
     ToggleBtn.AutoButtonColor = true
