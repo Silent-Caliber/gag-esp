@@ -218,8 +218,13 @@ end
 
 -- === MAIN UPDATE LOOP ===
 local selectedTypes = {}
-for _, v in pairs(cropSet) do
-    selectedTypes[v] = true
+
+-- Initialize Selected Types (only common crops enabled by default)
+for _, crop in ipairs(cropCategories.Obtainable.Common) do
+    selectedTypes[crop] = true
+end
+for _, crop in ipairs(cropCategories.Unobtainable.Common) do
+    selectedTypes[crop] = true
 end
 
 local function update()
@@ -680,6 +685,7 @@ local function createToggles()
 
     local cropsByCategory = getCategorizedTypes()
 
+    -- FIX: Create buttons with current toggle state
     for _, rarity in ipairs(rarityOrder) do
         if cropCategories.Obtainable[rarity] then
             for _, crop in ipairs(cropCategories.Obtainable[rarity]) do
@@ -688,7 +694,11 @@ local function createToggles()
                     btn.Size = UDim2.new(1, -4, 0, 14)
                     btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
                     btn.TextColor3 = Color3.new(1, 1, 1)
-                    btn.Text = "[OFF] " .. crop
+                    
+                    -- Set initial state based on selectedTypes
+                    local isSelected = selectedTypes[crop] == true
+                    btn.Text = (isSelected and "[ON] " or "[OFF] ") .. crop
+                    
                     btn.AutoButtonColor = true
                     btn.TextSize = 10
                     btn.Font = Enum.Font.SourceSansBold
@@ -709,7 +719,11 @@ local function createToggles()
                     btn.Size = UDim2.new(1, -4, 0, 14)
                     btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
                     btn.TextColor3 = Color3.new(1, 1, 1)
-                    btn.Text = "[OFF] " .. crop
+                    
+                    -- Set initial state based on selectedTypes
+                    local isSelected = selectedTypes[crop] == true
+                    btn.Text = (isSelected and "[ON] " or "[OFF] ") .. crop
+                    
                     btn.AutoButtonColor = true
                     btn.TextSize = 10
                     btn.Font = Enum.Font.SourceSansBold
@@ -950,11 +964,3 @@ local function createSizeToggleBtn(frame)
 end
 
 local SizeToggleBtn = createSizeToggleBtn(Frame)
-
--- Initialize Selected Types
-for _, crop in ipairs(cropCategories.Obtainable.Common) do
-    selectedTypes[crop] = true
-end
-for _, crop in ipairs(cropCategories.Unobtainable.Common) do
-    selectedTypes[crop] = true
-end
