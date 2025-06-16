@@ -3,6 +3,7 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local StarterGui = game:GetService("StarterGui")
+local GuiService = game:GetService("GuiService")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -316,9 +317,7 @@ DiscordCorner.CornerRadius = UDim.new(0, 4)
 
 DiscordBtn.MouseButton1Click:Connect(function()
     pcall(function()
-        StarterGui:SetCore("OpenBrowserWindow", {
-            URL = "https://discord.gg/JxEjAtdgWD"
-        })
+        GuiService:OpenBrowserWindow("https://discord.gg/JxEjAtdgWD")
     end)
 end)
 
@@ -332,10 +331,10 @@ end)
 
 -- Title (adjusted position)
 local Title = Instance.new("TextLabel", TitleBar)
-Title.Size = UDim2.new(1, -80, 1, 0)  -- Increased right margin
-Title.Position = UDim2.new(0, 70, 0, 0)  -- Moved right
+Title.Size = UDim2.new(1, -80, 1, 0)
+Title.Position = UDim2.new(0, 70, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "PUNK TEAM Grow A Garden ESP"
+Title.Text = "PUNK TEAM Grow Garden ESP"  -- Shortened title
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 14
@@ -362,11 +361,22 @@ local LegendListLayout = Instance.new("UIListLayout", LegendCol)
 LegendListLayout.Padding = UDim.new(0, 2)
 LegendListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
+-- Create rarity labels with abbreviations
+local rarityAbbreviations = {
+    Common = "Com",
+    Uncommon = "Unc",
+    Rare = "Rare",
+    Legendary = "Leg",
+    Mythical = "Myth",
+    Divine = "Div",
+    Prismatic = "Prism"
+}
+
 for _, rarity in ipairs(rarityOrder) do
     local label = Instance.new("TextLabel", LegendCol)
     label.Size = UDim2.new(1, 0, 0, 14)
     label.BackgroundTransparency = 1
-    label.Text = rarity
+    label.Text = rarityAbbreviations[rarity] or rarity
     label.TextColor3 = rarityColors[rarity]
     label.Font = Enum.Font.SourceSansBold
     label.TextSize = 12
@@ -688,6 +698,7 @@ local function createSizeToggleBtn(frame)
             DiscordBtn.Size = UDim2.new(0, 50, 0, 15)
             DiscordBtn.TextSize = 8
             DiscordBtn.Position = UDim2.new(0, 2, 0.5, -7.5)
+            Title.Text = "PUNK TEAM ESP"  -- Shorter title in compact mode
             Title.TextSize = 10
             Title.Position = UDim2.new(0, 52, 0, 0)
             Title.Size = UDim2.new(1, -55, 1, 0)
@@ -698,7 +709,7 @@ local function createSizeToggleBtn(frame)
             NearbyLabel.TextSize = 8
             for _, child in ipairs(LegendCol:GetChildren()) do
                 if child:IsA("TextLabel") and child ~= LegendLabel then
-                    child.TextSize = 9
+                    child.TextSize = 8
                 end
             end
             for i, label in ipairs(inputLabelsTbl) do
@@ -750,9 +761,10 @@ local function createSizeToggleBtn(frame)
             DiscordBtn.Size = UDim2.new(0, 60, 0, 18)
             DiscordBtn.TextSize = 10
             DiscordBtn.Position = UDim2.new(0, 4, 0.5, -9)
+            Title.Text = "PUNK TEAM Grow Garden ESP"  -- Restored title
             Title.TextSize = 14
-            Title.Position = UDim2.new(0, 70, 0, 0)  -- Adjusted position
-            Title.Size = UDim2.new(1, -80, 1, 0)  -- Adjusted size
+            Title.Position = UDim2.new(0, 70, 0, 0)
+            Title.Size = UDim2.new(1, -80, 1, 0)
 
             LegendLabel.TextSize = 12
             ObtainLabel.TextSize = 12
