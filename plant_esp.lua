@@ -218,13 +218,8 @@ end
 
 -- === MAIN UPDATE LOOP ===
 local selectedTypes = {}
-
--- Initialize Selected Types (only common crops enabled by default)
-for _, crop in ipairs(cropCategories.Obtainable.Common) do
-    selectedTypes[crop] = true
-end
-for _, crop in ipairs(cropCategories.Unobtainable.Common) do
-    selectedTypes[crop] = true
+for _, v in pairs(cropSet) do
+    selectedTypes[v] = true
 end
 
 local function update()
@@ -270,7 +265,7 @@ local function update()
             local cropInfo = cropSet[model.Name:lower()]
             local rarity = cropInfo and cropInfo.rarity or "Common"
             local color = rarityColors[rarity] or Color3.new(1,1,1)
-            local hexColor = string.format("#%02X%02X%02X", math.floor(color.r * 255), math.floor(color.g * 255), math.floor(color.b * 255)
+            local hexColor = string.format("#%02X%02X%02X", math.floor(color.r * 255), math.floor(color.g * 255), math.floor(color.b * 255))
 
             -- Calculate price
             local price
@@ -651,47 +646,31 @@ for i, labelName in ipairs(inputLabels) do
     table.insert(inputBoxes, box)
 end
 
--- ======= FIXED CROP TOGGLE SYSTEM ======= --
+-- Toggles for Crop Categories
 local function getCategorizedTypes()
-    local cropsByCategory = {
-        Obtainable = {},
-        Unobtainable = {}
-    }
-
-    -- Initialize rarity tables
-    for _, rarity in ipairs(rarityOrder) do
-        cropsByCategory.Obtainable[rarity] = {}
-        cropsByCategory.Unobtainable[rarity] = {}
+    local cropsByCategory = {}
+    for obtain, rarities in pairs(cropCategories) do
+        cropsByCategory[obtain] = {}
+        for rarity, _ in pairs(rarities) do
+            cropsByCategory[obtain][rarity] = {}
+        end
     end
 
-    -- Safe garden access
-    pcall(function()
-        local garden = workspace:FindFirstChild("Garden")
-        if not garden then return end
-
-        -- Find unique crop names in garden
-        local foundCrops = {}
+    local garden = workspace:FindFirstChild("Garden")
+    if garden then
         for _, model in ipairs(garden:GetDescendants()) do
             if model:IsA("Model") then
-                local cropName = model.Name
-                if not foundCrops[cropName] then
-                    foundCrops[cropName] = true
-                    local info = cropSet[cropName:lower()]
-                    if info then
-                        local obtain = info.obtain
-                        local rarity = info.rarity
-                        cropsByCategory[obtain][rarity][cropName] = true
-                    end
+                local info = cropSet[model.Name:lower()]
+                if info then
+                    cropsByCategory[info.obtain][info.rarity][model.Name] = true
                 end
             end
         end
-    end)
-
+    end
     return cropsByCategory
 end
 
 local function createToggles()
-    -- Clear existing buttons
     for _, child in ipairs(ObtainScroll:GetChildren()) do
         if child:IsA("TextButton") then child:Destroy() end
     end
@@ -701,47 +680,45 @@ local function createToggles()
 
     local cropsByCategory = getCategorizedTypes()
 
-    -- Create buttons for ACTUAL obtainable crops
     for _, rarity in ipairs(rarityOrder) do
-        for cropName in pairs(cropsByCategory.Obtainable[rarity]) do
-            local btn = Instance.new("TextButton", ObtainScroll)
-            btn.Size = UDim2.new(1, -4, 0, 14)
-            btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
-            btn.TextColor3 = Color3.new(1, 1, 1)
-            
-            -- Set initial state
-            local isSelected = selectedTypes[cropName] == true
-            btn.Text = (isSelected and "[ON] " or "[OFF] ") .. cropName
-            
-            btn.AutoButtonColor = true
-            btn.TextSize = 10
-            btn.Font = Enum.Font.SourceSansBold
-            btn.MouseButton1Click:Connect(function()
-                selectedTypes[cropName] = not selectedTypes[cropName]
-                btn.Text = (selectedTypes[cropName] and "[ON] " or "[OFF] ") .. cropName
-            end)
+        if cropCategories.Obtainable[rarity] then
+            for _, crop in ipairs(cropCategories.Obtainable[rarity]) do
+                if cropsByCategory.Obtainable[rarity][crop] then
+                    local btn = Instance.new("TextButton", ObtainScroll)
+                    btn.Size = UDim2.new(1, -4, 0, 14)
+                    btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
+                    btn.TextColor3 = Color3.new(1, 1, 1)
+                    btn.Text = "[OFF] " .. crop
+                    btn.AutoButtonColor = true
+                    btn.TextSize = 10
+                    btn.Font = Enum.Font.SourceSansBold
+                    btn.MouseButton1Click:Connect(function()
+                        selectedTypes[crop] = not selectedTypes[crop]
+                        btn.Text = (selectedTypes[crop] and "[ON] " or "[OFF] ") .. crop
+                    end)
+                end
+            end
         end
     end
 
-    -- Create buttons for ACTUAL unobtainable crops
     for _, rarity in ipairs(rarityOrder) do
-        for cropName in pairs(cropsByCategory.Unobtainable[rarity]) do
-            local btn = Instance.new("TextButton", UnobtainScroll)
-            btn.Size = UDim2.new(1, -4, 0, 14)
-            btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(80, 50, 50)
-            btn.TextColor3 = Color3.new(1, 1, 1)
-            
-            -- Set initial state
-            local isSelected = selectedTypes[cropName] == true
-            btn.Text = (isSelected and "[ON] " or "[OFF] ") .. cropName
-            
-            btn.AutoButtonColor = true
-            btn.TextSize = 10
-            btn.Font = Enum.Font.SourceSansBold
-            btn.MouseButton1Click:Connect(function()
-                selectedTypes[cropName] = not selectedTypes[cropName]
-                btn.Text = (selectedTypes[cropName] and "[ON] " or "[OFF] ") .. cropName
-            end)
+        if cropCategories.Unobtainable[rarity] then
+            for _, crop in ipairs(cropCategories.Unobtainable[rarity]) do
+                if cropsByCategory.Unobtainable[rarity][crop] then
+                    local btn = Instance.new("TextButton", UnobtainScroll)
+                    btn.Size = UDim2.new(1, -4, 0, 14)
+                    btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
+                    btn.TextColor3 = Color3.new(1, 1, 1)
+                    btn.Text = "[OFF] " .. crop
+                    btn.AutoButtonColor = true
+                    btn.TextSize = 10
+                    btn.Font = Enum.Font.SourceSansBold
+                    btn.MouseButton1Click:Connect(function()
+                        selectedTypes[crop] = not selectedTypes[crop]
+                        btn.Text = (selectedTypes[crop] and "[ON] " or "[OFF] ") .. crop
+                    end)
+                end
+            end
         end
     end
 end
@@ -749,7 +726,7 @@ end
 createToggles()
 
 spawn(function()
-    while task.wait(15) do  -- Refresh crop list every 15 seconds
+    while task.wait(15) do  -- Reduced toggle update frequency
         createToggles()
     end
 end)
@@ -973,3 +950,11 @@ local function createSizeToggleBtn(frame)
 end
 
 local SizeToggleBtn = createSizeToggleBtn(Frame)
+
+-- Initialize Selected Types
+for _, crop in ipairs(cropCategories.Obtainable.Common) do
+    selectedTypes[crop] = true
+end
+for _, crop in ipairs(cropCategories.Unobtainable.Common) do
+    selectedTypes[crop] = true
+end
