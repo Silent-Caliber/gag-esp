@@ -682,8 +682,7 @@ for i, labelName in ipairs(inputLabels) do
 
     table.insert(inputBoxes, box)
 end
-
--- Toggles for Crop Categories
+-- === TOGGLE BUTTONS WITH VISUAL SELECTION ===
 local function getCategorizedTypes()
     local cropsByCategory = {}
     for obtain, rarities in pairs(cropCategories) do
@@ -714,43 +713,55 @@ local function createToggles()
 
     local cropsByCategory = getCategorizedTypes()
 
+    -- Function to create toggle buttons with visual state
+    local function createCropToggleButton(parent, crop, rarity)
+        local btn = Instance.new("TextButton", parent)
+        btn.Size = UDim2.new(1, -4, 0, 14)
+        btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
+        btn.TextColor3 = Color3.new(1, 1, 1)
+        btn.Text = crop
+        btn.AutoButtonColor = true
+        btn.TextSize = 10
+        btn.Font = Enum.Font.SourceSansBold
+        
+        -- Visual state based on selection
+        local function updateButtonAppearance()
+            if selectedTypes[crop] then
+                btn.BackgroundTransparency = 0.3
+                btn.TextTransparency = 0
+            else
+                btn.BackgroundTransparency = 0.7
+                btn.TextTransparency = 0.5
+            end
+        end
+        
+        btn.MouseButton1Click:Connect(function()
+            selectedTypes[crop] = not selectedTypes[crop]
+            updateButtonAppearance()
+        end)
+        
+        -- Set initial appearance
+        updateButtonAppearance()
+        return btn
+    end
+
+    -- Create obtainable crop toggles
     for _, rarity in ipairs(rarityOrder) do
         if cropCategories.Obtainable[rarity] then
             for _, crop in ipairs(cropCategories.Obtainable[rarity]) do
                 if cropsByCategory.Obtainable[rarity][crop] then
-                    local btn = Instance.new("TextButton", ObtainScroll)
-                    btn.Size = UDim2.new(1, -4, 0, 14)
-                    btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
-                    btn.TextColor3 = Color3.new(1, 1, 1)
-                    btn.Text = "[OFF] " .. crop
-                    btn.AutoButtonColor = true
-                    btn.TextSize = 10
-                    btn.Font = Enum.Font.SourceSansBold
-                    btn.MouseButton1Click:Connect(function()
-                        selectedTypes[crop] = not selectedTypes[crop]
-                        btn.Text = (selectedTypes[crop] and "[ON] " or "[OFF] ") .. crop
-                    end)
+                    createCropToggleButton(ObtainScroll, crop, rarity)
                 end
             end
         end
     end
 
+    -- Create unobtainable crop toggles
     for _, rarity in ipairs(rarityOrder) do
         if cropCategories.Unobtainable[rarity] then
             for _, crop in ipairs(cropCategories.Unobtainable[rarity]) do
                 if cropsByCategory.Unobtainable[rarity][crop] then
-                    local btn = Instance.new("TextButton", UnobtainScroll)
-                    btn.Size = UDim2.new(1, -4, 0, 14)
-                    btn.BackgroundColor3 = rarityColors[rarity] or Color3.fromRGB(50, 80, 50)
-                    btn.TextColor3 = Color3.new(1, 1, 1)
-                    btn.Text = "[OFF] " .. crop
-                    btn.AutoButtonColor = true
-                    btn.TextSize = 10
-                    btn.Font = Enum.Font.SourceSansBold
-                    btn.MouseButton1Click:Connect(function()
-                        selectedTypes[crop] = not selectedTypes[crop]
-                        btn.Text = (selectedTypes[crop] and "[ON] " or "[OFF] ") .. crop
-                    end)
+                    createCropToggleButton(UnobtainScroll, crop, rarity)
                 end
             end
         end
@@ -764,6 +775,14 @@ spawn(function()
         createToggles()
     end
 end)
+
+-- Initialize Selected Types
+for _, crop in ipairs(cropCategories.Obtainable.Common) do
+    selectedTypes[crop] = true
+end
+for _, crop in ipairs(cropCategories.Unobtainable.Common) do
+    selectedTypes[crop] = true
+end
 
 -- Toggle Button (Show/Hide UI)
 local function createToggleBtn(screenGui, frame)
@@ -994,11 +1013,3 @@ local function createSizeToggleBtn(frame)
 end
 
 local SizeToggleBtn = createSizeToggleBtn(Frame)
-
--- Initialize Selected Types
-for _, crop in ipairs(cropCategories.Obtainable.Common) do
-    selectedTypes[crop] = true
-end
-for _, crop in ipairs(cropCategories.Unobtainable.Common) do
-    selectedTypes[crop] = true
-end
