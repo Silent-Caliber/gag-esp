@@ -4,7 +4,8 @@ local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local StarterGui = game:GetService("StarterGui")
 local GuiService = game:GetService("GuiService")
-local TweenService = game:GetService("TweenService")
+local TextService = game:GetService("TextService")
+local TweenService = game:GetService("TweenService") -- Added for notifications
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -160,29 +161,27 @@ local function getPP(model)
 end
 
 -- === ADD MISSING VALUES TO PLANT MODELS ===
+local plantCheckDelay = 15  -- Reduce frequency
 spawn(function()
     while task.wait(plantCheckDelay) do
-        -- Only check if we're in a garden
-        if workspace:FindFirstChild("Garden") then
-            for _, model in ipairs(workspace.Garden:GetDescendants()) do
-                if model:IsA("Model") and cropSet[model.Name:lower()] then
-                    if not model:FindFirstChild("Item_String") then
-                        local itemString = Instance.new("StringValue", model)
-                        itemString.Name = "Item_String"
-                        itemString.Value = model.Name
-                    end
+        for _, model in ipairs(workspace:GetDescendants()) do
+            if model:IsA("Model") and cropSet[model.Name:lower()] then
+                if not model:FindFirstChild("Item_String") then
+                    local itemString = Instance.new("StringValue", model)
+                    itemString.Name = "Item_String"
+                    itemString.Value = model.Name
+                end
 
-                    if not model:FindFirstChild("Variant") then
-                        local variant = Instance.new("StringValue", model)
-                        variant.Name = "Variant"
-                        variant.Value = "Normal"
-                    end
+                if not model:FindFirstChild("Variant") then
+                    local variant = Instance.new("StringValue", model)
+                    variant.Name = "Variant"
+                    variant.Value = "Normal"
+                end
 
-                    if not model:FindFirstChild("Weight") then
-                        local weight = Instance.new("NumberValue", model)
-                        weight.Name = "Weight"
-                        weight.Value = 3.4
-                    end
+                if not model:FindFirstChild("Weight") then
+                    local weight = Instance.new("NumberValue", model)
+                    weight.Name = "Weight"
+                    weight.Value = 3.4
                 end
             end
         end
@@ -202,6 +201,7 @@ end
 -- === ESP CREATION ===
 local espMap = {}
 local lastUpdate = 0
+local updateInterval = 1  -- Update every second
 
 local function createESP(model, labelText)
     if espMap[model] then
@@ -219,7 +219,6 @@ local function createESP(model, labelText)
     bg.StudsOffset = Vector3.new(0, 4, 0)
     bg.AlwaysOnTop = true
     bg.MaxDistance = 100  -- Only show within 100 studs
-    bg.Enabled = false -- Start disabled
 
     local tl = Instance.new("TextLabel", bg)
     tl.Size = UDim2.new(1, 0, 1, 0)
@@ -234,23 +233,14 @@ local function createESP(model, labelText)
     tl.TextStrokeTransparency = 0.3
     tl.TextXAlignment = Enum.TextXAlignment.Center
 
-    espMap[model] = {gui = bg, label = tl, enabled = false}
+    espMap[model] = tl
     return tl
 end
 
-local function setESPEnabled(model, enabled)
-    if espMap[model] then
-        if espMap[model].enabled ~= enabled then
-            espMap[model].gui.Enabled = enabled
-            espMap[model].enabled = enabled
-        end
-    end
-end
-
 local function cleanup(validModels)
-    for model, espData in pairs(espMap) do
+    for model, gui in pairs(espMap) do
         if not validModels[model] then
-            if espData.gui.Parent then espData.gui:Destroy() end
+            if gui.Parent then gui.Parent:Destroy() end
             espMap[model] = nil
         end
     end
@@ -259,14 +249,9 @@ end
 -- === NEARBY PLANTS DISPLAY ===
 local NearbyFrame
 local NearbyScroll
-local lastNearbyUpdate = 0
 
 local function updateNearbyPlants()
     if not NearbyScroll then return end
-    
-    local currentTime = tick()
-    if currentTime - lastNearbyUpdate < nearbyUpdateInterval then return end
-    lastNearbyUpdate = currentTime
     
     -- Clear existing labels efficiently
     for _, child in ipairs(NearbyScroll:GetChildren()) do
@@ -280,19 +265,13 @@ local function updateNearbyPlants()
     if not root then return end
 
     local found = {}
-    
-    -- Only scan the garden area for better performance
-    local garden = workspace:FindFirstChild("Garden")
-    if not garden then return end
-    
-    for _, model in ipairs(garden:GetDescendants()) do
+    for _, model in ipairs(workspace:GetDescendants()) do
         if model:IsA("Model") and cropSet[model.Name:lower()] then
             local pp = getPP(model)
             if pp then
                 local dist = (pp.Position - root.Position).Magnitude
                 if dist <= nearbyDistance then
                     table.insert(found, {model=model, dist=dist})
-                    if #found > 30 then break end  -- Limit to 30 plants
                 end
             end
         end
@@ -330,41 +309,29 @@ local function update()
     local validModels = {}
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-
     local nearest = {}
-    local rootPos = root.Position
-    
-    -- Only scan the garden area for better performance
-    local garden = workspace:FindFirstChild("Garden")
-    if not garden then
-        cleanup(validModels)
-        return 
-    end
-    
-    for _, model in ipairs(garden:GetDescendants()) do
-        if model:IsA("Model") and selectedTypes[model.Name] then
-            local pp = getPP(model)
-            if pp then
-                local dist = (pp.Position - rootPos).Magnitude
-                if dist <= maxDistance then
-                    table.insert(nearest, {model=model, dist=dist})
+
+    if root then
+        -- Optimized descendant scanning
+        local descendants = workspace:GetDescendants()
+        for i = 1, #descendants do
+            local model = descendants[i]
+            if model:IsA("Model") and selectedTypes[model.Name] then
+                local pp = getPP(model)
+                if pp then
+                    local dist = (pp.Position - root.Position).Magnitude
+                    if dist <= maxDistance then
+                        table.insert(nearest, {model=model, dist=dist})
+                    end
                 end
             end
         end
-    end
 
-    table.sort(nearest, function(a,b) return a.dist < b.dist end)
+        table.sort(nearest, function(a,b) return a.dist < b.dist end)
 
-    -- Only process the closest plants (maxESP + 5 for buffer)
-    for i = 1, math.min(#nearest, maxESP + 5) do
-        local model = nearest[i].model
-        local dist = nearest[i].dist
-        
-        -- Only show ESP for the closest maxESP plants
-        local shouldShow = i <= maxESP and dist <= maxDistance
-        
-        if shouldShow then
+        for i = 1, math.min(#nearest, maxESP) do
+            local model = nearest[i].model
+
             -- Get weight
             local weightObj = model:FindFirstChild("Weight")
             local weight = weightObj and weightObj.Value and string.format("%.1f", weightObj.Value) or "?"
@@ -397,17 +364,16 @@ local function update()
             if espLabel then
                 espLabel.RichText = true
             end
-            setESPEnabled(model, true)
             validModels[model] = true
-        else
-            setESPEnabled(model, false)
         end
     end
 
     cleanup(validModels)
     
-    -- Update nearby plants
-    updateNearbyPlants()
+    -- Update nearby plants less frequently to reduce lag
+    if currentTime % 3 < 0.1 then  -- Update every 3 seconds
+        updateNearbyPlants()
+    end
 end
 
 -- === RUN EVERY SECOND ===
@@ -419,7 +385,6 @@ end)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PlantESPSelector"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-ScreenGui.ResetOnSpawn = false
 
 local Frame = Instance.new("Frame", ScreenGui)
 Frame.Size = UDim2.new(0, 340, 0, 250)
@@ -437,7 +402,7 @@ TitleBar.BackgroundTransparency = 0.25
 TitleBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TitleBar.BorderSizePixel = 0
 
--- Discord Button
+-- Discord Button - Fixed version with reliable method
 local DiscordBtn = Instance.new("TextButton", TitleBar)
 DiscordBtn.Size = UDim2.new(0, 60, 0, 18)
 DiscordBtn.Position = UDim2.new(0, 4, 0.5, -9)
@@ -687,15 +652,11 @@ local function getCategorizedTypes()
         end
     end
 
-    -- Only check the garden folder
-    local garden = workspace:FindFirstChild("Garden")
-    if garden then
-        for _, model in ipairs(garden:GetDescendants()) do
-            if model:IsA("Model") then
-                local info = cropSet[model.Name:lower()]
-                if info then
-                    cropsByCategory[info.obtain][info.rarity][model.Name] = true
-                end
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") then
+            local info = cropSet[model.Name:lower()]
+            if info then
+                cropsByCategory[info.obtain][info.rarity][model.Name] = true
             end
         end
     end
@@ -758,7 +719,7 @@ end
 createToggles()
 
 spawn(function()
-    while task.wait(15) do  -- Reduced toggle update frequency
+    while task.wait(10) do
         createToggles()
     end
 end)
@@ -992,6 +953,3 @@ end
 for _, crop in ipairs(cropCategories.Unobtainable.Common) do
     selectedTypes[crop] = true
 end
-
--- Performance warning
-showNotification("ESP Loaded with Performance Optimizations")
