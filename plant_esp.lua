@@ -797,17 +797,16 @@ local function createToggleBtn(screenGui, frame)
     ToggleBtn.Size = UDim2.new(0, 38, 0, 38)
     ToggleBtn.Position = UDim2.new(0, 6, 0, 6)
     ToggleBtn.BackgroundTransparency = 1
-    ToggleBtn.Image = "rbxassetid://131613009113138" -- Your Roblox asset ID
+    ToggleBtn.Image = "rbxassetid://131613009113138"
     ToggleBtn.ZIndex = 100
 
     -- Add circular background
-    local bg = Instance.new("Frame", ToggleBtn)
+    local bg = Instance.new("Frame")
     bg.Name = "Background"
     bg.Size = UDim2.new(1, 0, 1, 0)
     bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     bg.BackgroundTransparency = 0.15
     bg.ZIndex = 99
-    ToggleBtn:FindFirstChild("Background"):Destroy() -- Remove if already exists
     bg.Parent = ToggleBtn
     
     -- Make background circular
@@ -818,11 +817,6 @@ local function createToggleBtn(screenGui, frame)
     local stroke = Instance.new("UIStroke", bg)
     stroke.Color = Color3.fromRGB(255, 50, 50)
     stroke.Thickness = 2
-    
-    -- Position image on top of background
-    ToggleBtn.ImageTransparency = 0
-    ToggleBtn.BackgroundTransparency = 1
-    ToggleBtn.ZIndex = 100
     
     -- Make toggle button movable
     ToggleBtn.Active = true
@@ -845,20 +839,19 @@ local function createToggleBtn(screenGui, frame)
             0 -- Delay
         )
         
-        -- Scale and rotation animation
+        -- Scale animation
         local scaleGoal = uiVisible and 1 or 0.8
-        local rotationGoal = uiVisible and 0 or 360
-        
         local scaleTween = TweenService:Create(
             ToggleBtn,
             tweenInfo,
             {Size = UDim2.new(0, 38 * scaleGoal, 0, 38 * scaleGoal)}
         )
         
+        -- Rotation animation
         local rotationTween = TweenService:Create(
             ToggleBtn,
             tweenInfo,
-            {Rotation = rotationGoal}
+            {Rotation = uiVisible and 0 or 180}
         )
         
         -- Color pulse effect
