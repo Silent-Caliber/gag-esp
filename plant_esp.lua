@@ -15,12 +15,13 @@ local maxESP = 3
 local nearbyDistance = 15
 local updateInterval = 2.0
 local plantCheckDelay = 15
-local nearbyUpdateInterval = 5
+local nearbyUpdateInterval = 0.3  -- FASTER UPDATES (300ms)
 local maxNearbyPlants = 20
 
 -- === PERFORMANCE OPTIMIZATION ===
 local lastDescendantsUpdate = 0
 local cacheValidity = 10
+local lastNearbyUpdate = 0
 
 -- === NOTIFICATION SYSTEM ===
 local function showNotification(message)
@@ -243,23 +244,23 @@ local function cleanup(validModels)
     end
 end
 
--- === NEARBY PLANTS DISPLAY ===
+-- === OPTIMIZED NEARBY PLANTS DISPLAY ===
 local NearbyFrame
 local NearbyScroll
+local nearbyLabels = {} -- Store labels for reuse
 
 local function updateNearbyPlants()
     if not NearbyScroll then return end
     
-    for _, child in ipairs(NearbyScroll:GetChildren()) do
-        if child:IsA("TextLabel") then
-            child:Destroy()
-        end
-    end
+    local currentTime = tick()
+    if currentTime - lastNearbyUpdate < nearbyUpdateInterval then return end
+    lastNearbyUpdate = currentTime
 
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     if not root then return end
 
+    -- Find nearby plants
     local found = {}
     for _, model in ipairs(workspace:GetDescendants()) do
         if model:IsA("Model") and cropSet[model.Name:lower()] then
@@ -275,19 +276,33 @@ local function updateNearbyPlants()
 
     table.sort(found, function(a,b) return a.dist < b.dist end)
 
-    for _, entry in ipairs(found) do
-        local label = Instance.new("TextLabel", NearbyScroll)
-        label.Size = UDim2.new(1, -4, 0, 14)
-        label.BackgroundTransparency = 1
-        label.TextWrapped = false
-        label.TextScaled = false
-        label.ClipsDescendants = false
+    -- Reuse existing labels
+    for i, entry in ipairs(found) do
+        local label = nearbyLabels[i]
+        if not label then
+            label = Instance.new("TextLabel", NearbyScroll)
+            label.Size = UDim2.new(1, -4, 0, 14)
+            label.BackgroundTransparency = 1
+            label.TextWrapped = false
+            label.TextScaled = false
+            label.ClipsDescendants = false
+            label.Font = Enum.Font.SourceSansBold
+            label.TextSize = 10
+            nearbyLabels[i] = label
+        end
+        
         local cropInfo = cropSet[entry.model.Name:lower()]
         local rarity = cropInfo and cropInfo.rarity or "Common"
         label.TextColor3 = rarityColors[rarity] or Color3.new(1,1,1)
-        label.Font = Enum.Font.SourceSansBold
-        label.TextSize = 10
         label.Text = string.format("%s (%.1f)", entry.model.Name, entry.dist)
+        label.Visible = true
+    end
+
+    -- Hide extra labels
+    for i = #found + 1, #nearbyLabels do
+        if nearbyLabels[i] then
+            nearbyLabels[i].Visible = false
+        end
     end
 end
 
@@ -360,10 +375,7 @@ local function update()
     end
 
     cleanup(validModels)
-    
-    if currentTime % 3 < 0.1 then
-        updateNearbyPlants()
-    end
+    updateNearbyPlants() -- Force update nearby plants
 end
 
 -- === RUN EVERY SECOND ===
@@ -797,7 +809,7 @@ local function createToggleBtn(screenGui, frame)
     ToggleBtn.Size = UDim2.new(0, 38, 0, 38)
     ToggleBtn.Position = UDim2.new(0, 6, 0, 6)
     ToggleBtn.BackgroundTransparency = 1
-    ToggleBtn.Image = "rbxassetid://131613009113138"
+    ToggleBtn.Image = "rbxassetid://131613009113138" -- Your Roblox asset ID
     ToggleBtn.ZIndex = 100
 
     -- Add circular background
@@ -831,7 +843,7 @@ local function createToggleBtn(screenGui, frame)
         
         -- Animation effects
         local tweenInfo = TweenInfo.new(
-            0.5, -- Time
+            0.3, -- Time
             Enum.EasingStyle.Quint, -- Easing style
             Enum.EasingDirection.Out, -- Easing direction
             0, -- Repeat count
@@ -858,7 +870,7 @@ local function createToggleBtn(screenGui, frame)
         local pulseColor = uiVisible and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
         local colorTween = TweenService:Create(
             stroke,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
             {Color = pulseColor}
         )
         
@@ -868,13 +880,15 @@ local function createToggleBtn(screenGui, frame)
         colorTween:Play()
         
         -- Reset color after pulse
-        wait(0.5)
-        local resetTween = TweenService:Create(
-            stroke,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Color = Color3.fromRGB(255, 50, 50)}
-        )
-        resetTween:Play()
+        task.spawn(function()
+            wait(0.3)
+            local resetTween = TweenService:Create(
+                stroke,
+                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {Color = Color3.fromRGB(255, 50, 50)}
+            )
+            resetTween:Play()
+        end)
     end)
 
     -- Hover effects
