@@ -1051,9 +1051,11 @@ local function createSizeToggleBtn(frame)
                 box.Position = UDim2.new(0, (i-1)*colWidth + 2, 0, 8)
             end
             
-            -- Scale down toggle button
-            btn.Size = UDim2.new(0.6, 0, 0.6, 0)
-            btn.Position = UDim2.new(0.2, 0, 0.2, 0)
+            -- Adjust toggle button for compact mode
+            btnContainer.Size = UDim2.new(0, 20, 0, 20)
+            btnContainer.Position = UDim2.new(1, -25, 1, -25) -- Bottom right corner
+            btn.Size = UDim2.new(0.7, 0, 0.7, 0)
+            btn.Position = UDim2.new(0.15, 0, 0.15, 0)
         else
             frame.Size = UDim2.new(0, 340, 0, 250)
             frame.Position = UDim2.new(0, 10, 0, 60)
@@ -1117,7 +1119,9 @@ local function createSizeToggleBtn(frame)
                 box.Position = UDim2.new(0, (i-1)*colWidth + 2, 0, 12)
             end
             
-            -- Restore toggle button size
+            -- Restore toggle button size and position
+            btnContainer.Size = UDim2.new(0, 30, 0, 30)
+            btnContainer.Position = UDim2.new(1, -36, 0, 2) -- Top right
             btn.Size = UDim2.new(0.7, 0, 0.7, 0)
             btn.Position = UDim2.new(0.15, 0, 0.15, 0)
         end
