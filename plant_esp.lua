@@ -5,7 +5,7 @@ local HttpService = game:GetService("HttpService")
 local StarterGui = game:GetService("StarterGui")
 local GuiService = game:GetService("GuiService")
 local TextService = game:GetService("TextService")
-local TweenService = game:GetService("TweenService") -- Added for notifications
+local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -13,21 +13,20 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local maxDistance = 25
 local maxESP = 3
 local nearbyDistance = 15
-local updateInterval = 2.0 -- Increased update interval for better performance
-local plantCheckDelay = 60  -- Reduced frequency for plant value adding
-local nearbyUpdateInterval = 5  -- Update nearby plants less frequently
-local maxNearbyPlants = 20       -- Max plants in UI list
+local updateInterval = 2.0
+local plantCheckDelay = 15
+local nearbyUpdateInterval = 5
+local maxNearbyPlants = 20
 
 -- === PERFORMANCE OPTIMIZATION ===
 local lastDescendantsUpdate = 0
-local cacheValidity = 10  -- Refresh cache every 10 seconds
+local cacheValidity = 10
 
 -- === NOTIFICATION SYSTEM ===
 local function showNotification(message)
     local screenGui = LocalPlayer.PlayerGui:FindFirstChild("PlantESPSelector")
     if not screenGui then return end
     
-    -- Remove existing notifications
     for _, obj in ipairs(screenGui:GetChildren()) do
         if obj.Name == "Notification" then
             obj:Destroy()
@@ -61,7 +60,6 @@ local function showNotification(message)
     label.TextSize = 18
     label.TextWrapped = true
     
-    -- Fade in animation
     notification.BackgroundTransparency = 1
     label.TextTransparency = 1
     
@@ -80,9 +78,8 @@ local function showNotification(message)
     fadeIn:Play()
     textFadeIn:Play()
     
-    wait(3)  -- Show for 3 seconds
+    wait(3)
     
-    -- Fade out animation
     local fadeOut = TweenService:Create(
         notification,
         TweenInfo.new(0.5),
@@ -162,7 +159,6 @@ local function getPP(model)
 end
 
 -- === ADD MISSING VALUES TO PLANT MODELS ===
-local plantCheckDelay = 15  -- Reduce frequency
 spawn(function()
     while task.wait(plantCheckDelay) do
         for _, model in ipairs(workspace:GetDescendants()) do
@@ -202,7 +198,7 @@ end
 -- === ESP CREATION ===
 local espMap = {}
 local lastUpdate = 0
-local updateInterval = 1  -- Update every second
+local updateInterval = 1
 
 local function createESP(model, labelText)
     if espMap[model] then
@@ -219,7 +215,7 @@ local function createESP(model, labelText)
     bg.Size = UDim2.new(0, 200, 0, 16)
     bg.StudsOffset = Vector3.new(0, 4, 0)
     bg.AlwaysOnTop = true
-    bg.MaxDistance = 100  -- Only show within 100 studs
+    bg.MaxDistance = 100
 
     local tl = Instance.new("TextLabel", bg)
     tl.Size = UDim2.new(1, 0, 1, 0)
@@ -254,7 +250,6 @@ local NearbyScroll
 local function updateNearbyPlants()
     if not NearbyScroll then return end
     
-    -- Clear existing labels efficiently
     for _, child in ipairs(NearbyScroll:GetChildren()) do
         if child:IsA("TextLabel") then
             child:Destroy()
@@ -313,7 +308,6 @@ local function update()
     local nearest = {}
 
     if root then
-        -- Optimized descendant scanning
         local descendants = workspace:GetDescendants()
         for i = 1, #descendants do
             local model = descendants[i]
@@ -333,17 +327,14 @@ local function update()
         for i = 1, math.min(#nearest, maxESP) do
             local model = nearest[i].model
 
-            -- Get weight
             local weightObj = model:FindFirstChild("Weight")
             local weight = weightObj and weightObj.Value and string.format("%.1f", weightObj.Value) or "?"
 
-            -- Get rarity color
             local cropInfo = cropSet[model.Name:lower()]
             local rarity = cropInfo and cropInfo.rarity or "Common"
             local color = rarityColors[rarity] or Color3.new(1,1,1)
             local hexColor = string.format("#%02X%02X%02X", math.floor(color.r * 255), math.floor(color.g * 255), math.floor(color.b * 255))
 
-            -- Calculate price
             local price
             if CalculatePlantValue then
                 if typeof(CalculatePlantValue) == "table" and CalculatePlantValue.Calculate then
@@ -353,7 +344,6 @@ local function update()
                 end
             end
 
-            -- Format label
             local formattedPrice = price and formatPriceWithCommas(price) or "?"
 
             local label = string.format(
@@ -371,8 +361,7 @@ local function update()
 
     cleanup(validModels)
     
-    -- Update nearby plants less frequently to reduce lag
-    if currentTime % 3 < 0.1 then  -- Update every 3 seconds
+    if currentTime % 3 < 0.1 then
         updateNearbyPlants()
     end
 end
@@ -387,6 +376,7 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PlantESPSelector"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
+-- Main Frame with rounded corners and border
 local Frame = Instance.new("Frame", ScreenGui)
 Frame.Size = UDim2.new(0, 340, 0, 250)
 Frame.Position = UDim2.new(0, 10, 0, 60)
@@ -394,6 +384,16 @@ Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 Frame.BackgroundTransparency = 0.3
 Frame.Active = true
 Frame.Draggable = true
+
+-- Add rounded corners to main frame
+local frameCorner = Instance.new("UICorner", Frame)
+frameCorner.CornerRadius = UDim.new(0, 8)
+
+-- Add border to main frame
+local frameStroke = Instance.new("UIStroke", Frame)
+frameStroke.Color = Color3.fromRGB(255, 50, 50)
+frameStroke.Thickness = 2
+frameStroke.Transparency = 0.2
 
 -- TitleBar
 local TitleBar = Instance.new("Frame", Frame)
@@ -403,7 +403,7 @@ TitleBar.BackgroundTransparency = 0.25
 TitleBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TitleBar.BorderSizePixel = 0
 
--- Discord Button - Fixed version with reliable method
+-- Discord Button with rounded corners and border
 local DiscordBtn = Instance.new("TextButton", TitleBar)
 DiscordBtn.Size = UDim2.new(0, 60, 0, 18)
 DiscordBtn.Position = UDim2.new(0, 4, 0.5, -9)
@@ -413,20 +413,22 @@ DiscordBtn.TextColor3 = Color3.new(1, 1, 1)
 DiscordBtn.Font = Enum.Font.SourceSansBold
 DiscordBtn.TextSize = 10
 DiscordBtn.AutoButtonColor = false
-DiscordBtn.BorderSizePixel = 2
-DiscordBtn.BorderColor3 = Color3.fromRGB(255, 50, 50)
-DiscordBtn.ZIndex = 20  -- Ensure it's on top
+DiscordBtn.ZIndex = 20
 
+-- Add rounded corners to Discord button
 local DiscordCorner = Instance.new("UICorner", DiscordBtn)
 DiscordCorner.CornerRadius = UDim.new(0, 4)
 
--- Universal Discord button function that works on all devices
+-- Add border to Discord button
+local DiscordStroke = Instance.new("UIStroke", DiscordBtn)
+DiscordStroke.Color = Color3.fromRGB(255, 50, 50)
+DiscordStroke.Thickness = 2
+
+-- Discord button functionality
 DiscordBtn.MouseButton1Click:Connect(function()
     pcall(function()
-        -- Show notification
         showNotification("Joining PUNK TEAM Discord...")
         
-        -- Try all possible methods
         local success = pcall(function()
             GuiService:OpenBrowserWindow("https://discord.gg/JxEjAtdgWD")
         end)
@@ -440,7 +442,6 @@ DiscordBtn.MouseButton1Click:Connect(function()
         end
         
         if not success then
-            -- Fallback to clipboard method
             pcall(function()
                 setclipboard("https://discord.gg/JxEjAtdgWD")
                 showNotification("Discord link copied to clipboard!")
@@ -476,6 +477,14 @@ LegendCol.BackgroundTransparency = 0.2
 LegendCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 LegendCol.BorderSizePixel = 0
 
+-- Add rounded corners and border
+local legendCorner = Instance.new("UICorner", LegendCol)
+legendCorner.CornerRadius = UDim.new(0, 6)
+local legendStroke = Instance.new("UIStroke", LegendCol)
+legendStroke.Color = Color3.fromRGB(255, 50, 50)
+legendStroke.Thickness = 1
+legendStroke.Transparency = 0.3
+
 local LegendLabel = Instance.new("TextLabel", LegendCol)
 LegendLabel.Size = UDim2.new(1, 0, 0, 16)
 LegendLabel.Position = UDim2.new(0, 0, 0, 0)
@@ -489,7 +498,6 @@ local LegendListLayout = Instance.new("UIListLayout", LegendCol)
 LegendListLayout.Padding = UDim.new(0, 2)
 LegendListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- Create rarity labels with full names
 local rarityFullNames = {}
 for _, rarity in ipairs(rarityOrder) do
     local label = Instance.new("TextLabel", LegendCol)
@@ -509,6 +517,14 @@ ObtainCol.Position = UDim2.new(0, 65, 0, 22)
 ObtainCol.BackgroundTransparency = 0.2
 ObtainCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 ObtainCol.BorderSizePixel = 0
+
+-- Add rounded corners and border
+local obtainCorner = Instance.new("UICorner", ObtainCol)
+obtainCorner.CornerRadius = UDim.new(0, 6)
+local obtainStroke = Instance.new("UIStroke", ObtainCol)
+obtainStroke.Color = Color3.fromRGB(255, 50, 50)
+obtainStroke.Thickness = 1
+obtainStroke.Transparency = 0.3
 
 local ObtainLabel = Instance.new("TextLabel", ObtainCol)
 ObtainLabel.Size = UDim2.new(1, 0, 0, 16)
@@ -537,6 +553,14 @@ UnobtainCol.BackgroundTransparency = 0.2
 UnobtainCol.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 UnobtainCol.BorderSizePixel = 0
 
+-- Add rounded corners and border
+local unobtainCorner = Instance.new("UICorner", UnobtainCol)
+unobtainCorner.CornerRadius = UDim.new(0, 6)
+local unobtainStroke = Instance.new("UIStroke", UnobtainCol)
+unobtainStroke.Color = Color3.fromRGB(255, 50, 50)
+unobtainStroke.Thickness = 1
+unobtainStroke.Transparency = 0.3
+
 local UnobtainLabel = Instance.new("TextLabel", UnobtainCol)
 UnobtainLabel.Size = UDim2.new(1, 0, 0, 16)
 UnobtainLabel.Position = UDim2.new(0, 0, 0, 0)
@@ -564,6 +588,14 @@ NearbyFrame.BackgroundTransparency = 0.3
 NearbyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 NearbyFrame.BorderSizePixel = 0
 
+-- Add rounded corners and border
+local nearbyCorner = Instance.new("UICorner", NearbyFrame)
+nearbyCorner.CornerRadius = UDim.new(0, 6)
+local nearbyStroke = Instance.new("UIStroke", NearbyFrame)
+nearbyStroke.Color = Color3.fromRGB(255, 50, 50)
+nearbyStroke.Thickness = 1
+nearbyStroke.Transparency = 0.3
+
 local NearbyLabel = Instance.new("TextLabel", NearbyFrame)
 NearbyLabel.Size = UDim2.new(1, 0, 0, 12)
 NearbyLabel.Position = UDim2.new(0, 0, 0, 0)
@@ -590,6 +622,14 @@ InputFrame.Position = UDim2.new(0, 65, 1, -42)
 InputFrame.BackgroundTransparency = 0.3
 InputFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 InputFrame.BorderSizePixel = 0
+
+-- Add rounded corners and border
+local inputCorner = Instance.new("UICorner", InputFrame)
+inputCorner.CornerRadius = UDim.new(0, 6)
+local inputStroke = Instance.new("UIStroke", InputFrame)
+inputStroke.Color = Color3.fromRGB(255, 50, 50)
+inputStroke.Thickness = 1
+inputStroke.Transparency = 0.3
 
 local inputLabels = {"Max Dist", "Max ESP", "Nearby Dist"}
 local inputVars = {"maxDistance", "maxESP", "nearbyDistance"}
@@ -746,8 +786,18 @@ local function createToggleBtn(screenGui, frame)
     ToggleBtn.ZIndex = 100
     ToggleBtn.BorderSizePixel = 0
 
+    -- Make toggle button movable
+    ToggleBtn.Active = true
+    ToggleBtn.Draggable = true
+    
+    -- Add rounded corners
     local corner = Instance.new("UICorner", ToggleBtn)
     corner.CornerRadius = UDim.new(1, 0)
+
+    -- Add border (same as Discord button)
+    local toggleStroke = Instance.new("UIStroke", ToggleBtn)
+    toggleStroke.Color = Color3.fromRGB(255, 50, 50)
+    toggleStroke.Thickness = 2
 
     local shadow = Instance.new("ImageLabel", ToggleBtn)
     shadow.BackgroundTransparency = 1
@@ -791,15 +841,20 @@ local function createSizeToggleBtn(frame)
     btn.ZIndex = 101
     btn.BorderSizePixel = 0
 
+    -- Add rounded corners
     local corner = Instance.new("UICorner", btn)
     corner.CornerRadius = UDim.new(1, 0)
+
+    -- Add border
+    local sizeToggleStroke = Instance.new("UIStroke", btn)
+    sizeToggleStroke.Color = Color3.fromRGB(255, 50, 50)
+    sizeToggleStroke.Thickness = 2
 
     local compact = false
 
     btn.MouseButton1Click:Connect(function()
         compact = not compact
         if compact then
-            -- Compact layout
             frame.Size = UDim2.new(0, 160, 0, 160)
             frame.Position = UDim2.new(0, 10, 0, 20)
             LegendCol.Size = UDim2.new(0, 50, 0, 100)
@@ -813,7 +868,6 @@ local function createSizeToggleBtn(frame)
             InputFrame.Size = UDim2.new(0, 150, 0, 16)
             InputFrame.Position = UDim2.new(0, 0, 1, -20)
             
-            -- Adjust Discord button for compact mode
             DiscordBtn.Size = UDim2.new(0, 50, 0, 15)
             DiscordBtn.TextSize = 8
             DiscordBtn.Position = UDim2.new(0, 2, 0.5, -7.5)
@@ -827,7 +881,6 @@ local function createSizeToggleBtn(frame)
             UnobtainLabel.TextSize = 9
             NearbyLabel.TextSize = 8
             
-            -- Change rarity names to abbreviations in compact mode
             local rarityAbbreviations = {
                 Common = "Com",
                 Uncommon = "Unc",
@@ -855,14 +908,12 @@ local function createSizeToggleBtn(frame)
                 if b:IsA("TextButton") then
                     b.TextSize = 8
                     b.TextWrapped = true
-                    b.TextScaled = false
                 end
             end
             for _, b in ipairs(UnobtainScroll:GetChildren()) do
                 if b:IsA("TextButton") then
                     b.TextSize = 8
                     b.TextWrapped = true
-                    b.TextScaled = false
                 end
             end
 
@@ -876,7 +927,6 @@ local function createSizeToggleBtn(frame)
                 box.Position = UDim2.new(0, (i-1)*colWidth + 2, 0, 8)
             end
         else
-            -- Normal layout
             frame.Size = UDim2.new(0, 340, 0, 250)
             frame.Position = UDim2.new(0, 10, 0, 60)
             LegendCol.Size = UDim2.new(0, 65, 0, 174)
@@ -890,7 +940,6 @@ local function createSizeToggleBtn(frame)
             InputFrame.Size = UDim2.new(0, 275, 0, 30)
             InputFrame.Position = UDim2.new(0, 65, 1, -42)
             
-            -- Restore Discord button to normal size
             DiscordBtn.Size = UDim2.new(0, 60, 0, 18)
             DiscordBtn.TextSize = 10
             DiscordBtn.Position = UDim2.new(0, 4, 0.5, -9)
@@ -904,7 +953,6 @@ local function createSizeToggleBtn(frame)
             UnobtainLabel.TextSize = 12
             NearbyLabel.TextSize = 11
             
-            -- Restore full rarity names
             for _, rarity in ipairs(rarityOrder) do
                 if rarityFullNames[rarity] then
                     rarityFullNames[rarity].Text = rarity
