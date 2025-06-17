@@ -17,26 +17,8 @@ local plantCheckDelay = 30  -- Reduced frequency for plant value adding
 local nearbyUpdateInterval = 3  -- Update nearby plants less frequently
 
 -- === PERFORMANCE OPTIMIZATION ===
-local gardenFolder = workspace:FindFirstChild("Garden")  -- Cache garden folder
-local descendantsCache = {}
 local lastDescendantsUpdate = 0
 local cacheValidity = 10  -- Refresh cache every 10 seconds
-
-local function getGardenDescendants()
-    local currentTime = tick()
-    
-    -- Refresh cache if needed
-    if currentTime - lastDescendantsUpdate > cacheValidity or not descendantsCache then
-        if gardenFolder then
-            descendantsCache = gardenFolder:GetDescendants()
-        else
-            descendantsCache = {}
-        end
-        lastDescendantsUpdate = currentTime
-    end
-    
-    return descendantsCache
-end
 
 -- === NOTIFICATION SYSTEM ===
 local function showNotification(message)
@@ -180,27 +162,27 @@ end
 -- === ADD MISSING VALUES TO PLANT MODELS ===
 spawn(function()
     while task.wait(plantCheckDelay) do
-        gardenFolder = workspace:FindFirstChild("Garden") or gardenFolder
-        local descendants = gardenFolder and gardenFolder:GetDescendants() or {}
-        
-        for _, model in ipairs(descendants) do
-            if model:IsA("Model") and cropSet[model.Name:lower()] then
-                if not model:FindFirstChild("Item_String") then
-                    local itemString = Instance.new("StringValue", model)
-                    itemString.Name = "Item_String"
-                    itemString.Value = model.Name
-                end
+        -- Only check if we're in a garden
+        if workspace:FindFirstChild("Garden") then
+            for _, model in ipairs(workspace.Garden:GetDescendants()) do
+                if model:IsA("Model") and cropSet[model.Name:lower()] then
+                    if not model:FindFirstChild("Item_String") then
+                        local itemString = Instance.new("StringValue", model)
+                        itemString.Name = "Item_String"
+                        itemString.Value = model.Name
+                    end
 
-                if not model:FindFirstChild("Variant") then
-                    local variant = Instance.new("StringValue", model)
-                    variant.Name = "Variant"
-                    variant.Value = "Normal"
-                end
+                    if not model:FindFirstChild("Variant") then
+                        local variant = Instance.new("StringValue", model)
+                        variant.Name = "Variant"
+                        variant.Value = "Normal"
+                    end
 
-                if not model:FindFirstChild("Weight") then
-                    local weight = Instance.new("NumberValue", model)
-                    weight.Name = "Weight"
-                    weight.Value = 3.4
+                    if not model:FindFirstChild("Weight") then
+                        local weight = Instance.new("NumberValue", model)
+                        weight.Name = "Weight"
+                        weight.Value = 3.4
+                    end
                 end
             end
         end
@@ -298,10 +280,12 @@ local function updateNearbyPlants()
     if not root then return end
 
     local found = {}
-    local descendants = getGardenDescendants()
     
-    for i = 1, #descendants do
-        local model = descendants[i]
+    -- Only scan the garden area for better performance
+    local garden = workspace:FindFirstChild("Garden")
+    if not garden then return end
+    
+    for _, model in ipairs(garden:GetDescendants()) do
         if model:IsA("Model") and cropSet[model.Name:lower()] then
             local pp = getPP(model)
             if pp then
@@ -349,11 +333,16 @@ local function update()
     if not root then return end
 
     local nearest = {}
-    local descendants = getGardenDescendants()
     local rootPos = root.Position
     
-    for i = 1, #descendants do
-        local model = descendants[i]
+    -- Only scan the garden area for better performance
+    local garden = workspace:FindFirstChild("Garden")
+    if not garden then
+        cleanup(validModels)
+        return 
+    end
+    
+    for _, model in ipairs(garden:GetDescendants()) do
         if model:IsA("Model") and selectedTypes[model.Name] then
             local pp = getPP(model)
             if pp then
@@ -698,13 +687,15 @@ local function getCategorizedTypes()
         end
     end
 
-    local descendants = getGardenDescendants()
-    for i = 1, #descendants do
-        local model = descendants[i]
-        if model:IsA("Model") then
-            local info = cropSet[model.Name:lower()]
-            if info then
-                cropsByCategory[info.obtain][info.rarity][model.Name] = true
+    -- Only check the garden folder
+    local garden = workspace:FindFirstChild("Garden")
+    if garden then
+        for _, model in ipairs(garden:GetDescendants()) do
+            if model:IsA("Model") then
+                local info = cropSet[model.Name:lower()]
+                if info then
+                    cropsByCategory[info.obtain][info.rarity][model.Name] = true
+                end
             end
         end
     end
