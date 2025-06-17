@@ -14,13 +14,13 @@ local maxDistance = 25
 local maxESP = 3
 local nearbyDistance = 15
 local updateInterval = 2.0
-local plantCheckDelay = 15
-local nearbyUpdateInterval = 0.7
+local plantCheckDelay = 20
+local nearbyUpdateInterval = 0.9
 local maxNearbyPlants = 20
 
 -- === PERFORMANCE OPTIMIZATION ===
 local lastDescendantsUpdate = 0
-local cacheValidity = 10
+local cacheValidity = 15
 local lastNearbyUpdate = 0
 
 -- === NOTIFICATION SYSTEM ===
