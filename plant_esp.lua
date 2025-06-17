@@ -15,7 +15,7 @@ local maxESP = 3
 local nearbyDistance = 15
 local updateInterval = 2.0
 local plantCheckDelay = 15
-local nearbyUpdateInterval = 2
+local nearbyUpdateInterval = 5
 local maxNearbyPlants = 20
 
 -- === PERFORMANCE OPTIMIZATION ===
@@ -682,7 +682,7 @@ for i, labelName in ipairs(inputLabels) do
 
     table.insert(inputBoxes, box)
 end
--- === TOGGLE BUTTONS WITH VISUAL SELECTION ===
+-- === TOGGLE BUTTONS WITH ANIMATION ===
 local function getCategorizedTypes()
     local cropsByCategory = {}
     for obtain, rarities in pairs(cropCategories) do
@@ -790,40 +790,43 @@ local function createToggleBtn(screenGui, frame)
         screenGui.ShowHideESPBtn:Destroy()
     end
 
-    local ToggleBtn = Instance.new("TextButton")
+    -- Main toggle button container
+    local ToggleBtn = Instance.new("ImageButton")
     ToggleBtn.Name = "ShowHideESPBtn"
     ToggleBtn.Parent = screenGui
     ToggleBtn.Size = UDim2.new(0, 38, 0, 38)
     ToggleBtn.Position = UDim2.new(0, 6, 0, 6)
-    ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
-    ToggleBtn.Text = "❌"
-    ToggleBtn.Font = Enum.Font.SourceSansBold
-    ToggleBtn.TextSize = 22
-    ToggleBtn.AutoButtonColor = true
-    ToggleBtn.BackgroundTransparency = 0.15
+    ToggleBtn.BackgroundTransparency = 1
+    ToggleBtn.Image = "rbxassetid://131613009113138" -- Your Roblox asset ID
     ToggleBtn.ZIndex = 100
-    ToggleBtn.BorderSizePixel = 0
 
+    -- Add circular background
+    local bg = Instance.new("Frame", ToggleBtn)
+    bg.Name = "Background"
+    bg.Size = UDim2.new(1, 0, 1, 0)
+    bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    bg.BackgroundTransparency = 0.15
+    bg.ZIndex = 99
+    ToggleBtn:FindFirstChild("Background"):Destroy() -- Remove if already exists
+    bg.Parent = ToggleBtn
+    
+    -- Make background circular
+    local corner = Instance.new("UICorner", bg)
+    corner.CornerRadius = UDim.new(1, 0)
+    
+    -- Add border to background
+    local stroke = Instance.new("UIStroke", bg)
+    stroke.Color = Color3.fromRGB(255, 50, 50)
+    stroke.Thickness = 2
+    
+    -- Position image on top of background
+    ToggleBtn.ImageTransparency = 0
+    ToggleBtn.BackgroundTransparency = 1
+    ToggleBtn.ZIndex = 100
+    
     -- Make toggle button movable
     ToggleBtn.Active = true
     ToggleBtn.Draggable = true
-    
-    -- Add rounded corners
-    local corner = Instance.new("UICorner", ToggleBtn)
-    corner.CornerRadius = UDim.new(1, 0)
-
-    -- Add border (same as Discord button)
-    local toggleStroke = Instance.new("UIStroke", ToggleBtn)
-    toggleStroke.Color = Color3.fromRGB(255, 50, 50)
-    toggleStroke.Thickness = 2
-
-    local shadow = Instance.new("ImageLabel", ToggleBtn)
-    shadow.BackgroundTransparency = 1
-    shadow.Image = "rbxassetid://1316045217"
-    shadow.Size = UDim2.new(1.4, 0, 1.4, 0)
-    shadow.Position = UDim2.new(-0.2, 0, -0.2, 0)
-    shadow.ZIndex = 99
 
     local uiVisible = true
     frame.Visible = uiVisible
@@ -831,7 +834,73 @@ local function createToggleBtn(screenGui, frame)
     ToggleBtn.MouseButton1Click:Connect(function()
         uiVisible = not uiVisible
         frame.Visible = uiVisible
-        ToggleBtn.Text = uiVisible and "✖" or "⟳"
+        
+        -- Animation effects
+        local tweenInfo = TweenInfo.new(
+            0.5, -- Time
+            Enum.EasingStyle.Quint, -- Easing style
+            Enum.EasingDirection.Out, -- Easing direction
+            0, -- Repeat count
+            false, -- Reverses
+            0 -- Delay
+        )
+        
+        -- Scale and rotation animation
+        local scaleGoal = uiVisible and 1 or 0.8
+        local rotationGoal = uiVisible and 0 or 360
+        
+        local scaleTween = TweenService:Create(
+            ToggleBtn,
+            tweenInfo,
+            {Size = UDim2.new(0, 38 * scaleGoal, 0, 38 * scaleGoal)}
+        )
+        
+        local rotationTween = TweenService:Create(
+            ToggleBtn,
+            tweenInfo,
+            {Rotation = rotationGoal}
+        )
+        
+        -- Color pulse effect
+        local pulseColor = uiVisible and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
+        local colorTween = TweenService:Create(
+            stroke,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Color = pulseColor}
+        )
+        
+        -- Play animations
+        scaleTween:Play()
+        rotationTween:Play()
+        colorTween:Play()
+        
+        -- Reset color after pulse
+        wait(0.5)
+        local resetTween = TweenService:Create(
+            stroke,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Color = Color3.fromRGB(255, 50, 50)}
+        )
+        resetTween:Play()
+    end)
+
+    -- Hover effects
+    ToggleBtn.MouseEnter:Connect(function()
+        local tween = TweenService:Create(
+            bg,
+            TweenInfo.new(0.2),
+            {BackgroundTransparency = 0}
+        )
+        tween:Play()
+    end)
+
+    ToggleBtn.MouseLeave:Connect(function()
+        local tween = TweenService:Create(
+            bg,
+            TweenInfo.new(0.2),
+            {BackgroundTransparency = 0.15}
+        )
+        tween:Play()
     end)
 
     return ToggleBtn
