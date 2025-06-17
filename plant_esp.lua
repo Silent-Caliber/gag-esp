@@ -694,6 +694,7 @@ for i, labelName in ipairs(inputLabels) do
 
     table.insert(inputBoxes, box)
 end
+
 -- === TOGGLE BUTTONS WITH ANIMATION ===
 local function getCategorizedTypes()
     local cropsByCategory = {}
