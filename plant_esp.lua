@@ -25,12 +25,100 @@ local lastNearbyUpdate = 0
 
 -- === NOTIFICATION SYSTEM ===
 local function showNotification(message)
-    -- (Notification code remains unchanged)
+    local screenGui = LocalPlayer.PlayerGui:FindFirstChild("PlantESPSelector")
+    if not screenGui then return end
+    
+    for _, obj in ipairs(screenGui:GetChildren()) do
+        if obj.Name == "Notification" then
+            obj:Destroy()
+        end
+    end
+    
+    local notification = Instance.new("Frame")
+    notification.Name = "Notification"
+    notification.Size = UDim2.new(0, 300, 0, 50)
+    notification.Position = UDim2.new(0.5, -150, 0.1, 0)
+    notification.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    notification.BackgroundTransparency = 0.3
+    notification.BorderSizePixel = 0
+    notification.ZIndex = 100
+    notification.Parent = screenGui
+    
+    local corner = Instance.new("UICorner", notification)
+    corner.CornerRadius = UDim.new(0, 8)
+    
+    local stroke = Instance.new("UIStroke", notification)
+    stroke.Color = Color3.fromRGB(255, 50, 50)
+    stroke.Thickness = 2
+    
+    local label = Instance.new("TextLabel", notification)
+    label.Size = UDim2.new(1, -10, 1, -10)
+    label.Position = UDim2.new(0, 5, 0, 5)
+    label.BackgroundTransparency = 1
+    label.Text = message
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 18
+    label.TextWrapped = true
+    
+    notification.BackgroundTransparency = 1
+    label.TextTransparency = 1
+    
+    local fadeIn = TweenService:Create(
+        notification,
+        TweenInfo.new(0.5),
+        {BackgroundTransparency = 0.3}
+    )
+    
+    local textFadeIn = TweenService:Create(
+        label,
+        TweenInfo.new(0.5),
+        {TextTransparency = 0}
+    )
+    
+    fadeIn:Play()
+    textFadeIn:Play()
+    
+    wait(3)
+    
+    local fadeOut = TweenService:Create(
+        notification,
+        TweenInfo.new(0.5),
+        {BackgroundTransparency = 1}
+    )
+    
+    local textFadeOut = TweenService:Create(
+        label,
+        TweenInfo.new(0.5),
+        {TextTransparency = 1}
+    )
+    
+    fadeOut:Play()
+    textFadeOut:Play()
+    
+    fadeOut.Completed:Wait()
+    notification:Destroy()
 end
 
 -- === CROP CATEGORIES & COLORS ===
 local cropCategories = {
-    -- (Crop categories remain unchanged)
+    Obtainable = {
+        Common = {"Carrot", "Strawberry"},
+        Uncommon = {"Blueberry", "Manuka Flower", "Orange Tulip", "Rose", "Lavender"},
+        Rare = {"Tomato", "Corn", "Dandelion", "Daffodil", "Nectarshade", "Raspberry", "Foxglove"},
+        Legendary = {"Watermelon", "Pumpkin", "Apple", "Bamboo", "Lilac", "Lumira"},
+        Mythical = {"Coconut", "Cactus", "Dragon Fruit", "Honeysuckle", "Mango", "Nectarine", "Peach", "Pineapple", "Pink Lily", "Purple Dahlia"},
+        Divine = {"Grape", "Mushroom", "Pepper", "Cacao", "Hive Fruit", "Sunflower"},
+        Prismatic = {"Beanstalk", "Ember Lily"},
+    },
+    Unobtainable = {
+        Common = {"Chocolate Carrot"},
+        Uncommon = {"Red Lollipop", "Nightshade"},
+        Rare = {"Candy Sunflower", "Mint", "Glowshroom", "Pear"},
+        Legendary = {"Cranberry", "Durian", "Easter Egg", "Papaya"},
+        Mythical = {"Celestiberry", "Blood Banana", "Moon Melon", "Eggplant", "Passionfruit", "Lemon", "Banana"},
+        Divine = {"Cherry Blossom", "Crimson Vine", "Candy Blossom", "Lotus", "Venus Fly Trap", "Cursed Fruit", "Soul Fruit", "Mega Mushroom", "Moon Blossom", "Moon Mango"},
+    }
 }
 
 local cropSet = {}
@@ -44,7 +132,13 @@ end
 
 local rarityOrder = {"Common","Uncommon","Rare","Legendary","Mythical","Divine","Prismatic"}
 local rarityColors = {
-    -- (Rarity colors remain unchanged)
+    Common = Color3.fromRGB(180, 180, 180),
+    Uncommon = Color3.fromRGB(80, 200, 80),
+    Rare = Color3.fromRGB(80, 120, 255),
+    Legendary = Color3.fromRGB(255, 215, 0),
+    Mythical = Color3.fromRGB(255, 100, 255),
+    Divine = Color3.fromRGB(255, 90, 90),
+    Prismatic = Color3.fromRGB(100,255,255),
 }
 
 -- === LOAD MODULES ===
@@ -55,7 +149,14 @@ end
 
 -- === UTILITY FUNCTIONS ===
 local function getPP(model)
-    -- (getPP function remains unchanged)
+    if model.PrimaryPart then return model.PrimaryPart end
+    for _, c in ipairs(model:GetChildren()) do
+        if c:IsA("BasePart") then
+            model.PrimaryPart = c
+            return c
+        end
+    end
+    return nil
 end
 
 -- === ADD MISSING VALUES TO PLANT MODELS ===
@@ -63,7 +164,23 @@ spawn(function()
     while task.wait(plantCheckDelay) do
         for _, model in ipairs(workspace:GetDescendants()) do
             if model:IsA("Model") and cropSet[model.Name:lower()] then
-                -- (Plant value setup remains unchanged)
+                if not model:FindFirstChild("Item_String") then
+                    local itemString = Instance.new("StringValue", model)
+                    itemString.Name = "Item_String"
+                    itemString.Value = model.Name
+                end
+
+                if not model:FindFirstChild("Variant") then
+                    local variant = Instance.new("StringValue", model)
+                    variant.Name = "Variant"
+                    variant.Value = "Normal"
+                end
+
+                if not model:FindFirstChild("Weight") then
+                    local weight = Instance.new("NumberValue", model)
+                    weight.Name = "Weight"
+                    weight.Value = 3.4
+                end
             end
         end
     end
@@ -71,7 +188,12 @@ end)
 
 -- === NUMBER FORMATTING FUNCTION ===
 local function formatPriceWithCommas(n)
-    -- (Formatting function remains unchanged)
+    local formatted = tostring(math.floor(n))
+    while true do
+        formatted, k = formatted:gsub("^(-?%d+)(%d%d%d)", "%1,%2")
+        if k == 0 then break end
+    end
+    return formatted .. "$"
 end
 
 -- === ESP CREATION ===
@@ -80,25 +202,115 @@ local lastUpdate = 0
 local updateInterval = 1
 
 local function createESP(model, labelText)
-    -- (ESP creation remains unchanged)
+    if espMap[model] then
+        espMap[model].Text = labelText
+        return espMap[model]
+    end
+
+    local pp = getPP(model)
+    if not pp then return end
+
+    local bg = Instance.new("BillboardGui", model)
+    bg.Name = "PlantESP"
+    bg.Adornee = pp
+    bg.Size = UDim2.new(0, 200, 0, 16)
+    bg.StudsOffset = Vector3.new(0, 4, 0)
+    bg.AlwaysOnTop = true
+    bg.MaxDistance = 100
+
+    local tl = Instance.new("TextLabel", bg)
+    tl.Size = UDim2.new(1, 0, 1, 0)
+    tl.BackgroundTransparency = 1
+    tl.TextColor3 = Color3.new(1, 1, 1)
+    tl.Font = Enum.Font.FredokaOne
+    tl.TextSize = 10
+    tl.TextWrapped = false
+    tl.RichText = true
+    tl.Text = labelText
+    tl.TextStrokeColor3 = Color3.new(0, 0, 0)
+    tl.TextStrokeTransparency = 0.3
+    tl.TextXAlignment = Enum.TextXAlignment.Center
+
+    espMap[model] = tl
+    return tl
 end
 
 local function cleanup(validModels)
-    -- (Cleanup function remains unchanged)
+    for model, gui in pairs(espMap) do
+        if not validModels[model] then
+            if gui.Parent then gui.Parent:Destroy() end
+            espMap[model] = nil
+        end
+    end
 end
 
 -- === OPTIMIZED NEARBY PLANTS DISPLAY ===
 local NearbyFrame
 local NearbyScroll
-local nearbyLabels = {}
+local nearbyLabels = {} -- Store labels for reuse
 
 local function updateNearbyPlants()
-    -- (Nearby plants update remains unchanged)
+    if not NearbyScroll then return end
+    
+    local currentTime = tick()
+    if currentTime - lastNearbyUpdate < nearbyUpdateInterval then return end
+    lastNearbyUpdate = currentTime
+
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    -- Find nearby plants
+    local found = {}
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") and cropSet[model.Name:lower()] then
+            local pp = getPP(model)
+            if pp then
+                local dist = (pp.Position - root.Position).Magnitude
+                if dist <= nearbyDistance then
+                    table.insert(found, {model=model, dist=dist})
+                end
+            end
+        end
+    end
+
+    table.sort(found, function(a,b) return a.dist < b.dist end)
+
+    -- Reuse existing labels
+    for i, entry in ipairs(found) do
+        local label = nearbyLabels[i]
+        if not label then
+            label = Instance.new("TextLabel", NearbyScroll)
+            label.Size = UDim2.new(1, -4, 0, 14)
+            label.BackgroundTransparency = 1
+            label.TextWrapped = false
+            label.TextScaled = false
+            label.ClipsDescendants = false
+            label.Font = Enum.Font.SourceSansBold
+            label.TextSize = 10
+            nearbyLabels[i] = label
+        end
+        
+        local cropInfo = cropSet[entry.model.Name:lower()]
+        local rarity = cropInfo and cropInfo.rarity or "Common"
+        label.TextColor3 = rarityColors[rarity] or Color3.new(1,1,1)
+        label.Text = string.format("%s (%.1f)", entry.model.Name, entry.dist)
+        label.Visible = true
+    end
+
+    -- Hide extra labels
+    for i = #found + 1, #nearbyLabels do
+        if nearbyLabels[i] then
+            nearbyLabels[i].Visible = false
+        end
+    end
 end
 
 -- === MAIN UPDATE LOOP ===
--- FIXED: Initialize as empty table instead of enabling all crops
 local selectedTypes = {}
+for _, v in pairs(cropSet) do
+    selectedTypes[v] = true
+end
 
 local function update()
     local currentTime = tick()
@@ -114,8 +326,7 @@ local function update()
         local descendants = workspace:GetDescendants()
         for i = 1, #descendants do
             local model = descendants[i]
-            -- FIXED: Check if crop is selected using model.Name
-            if model:IsA("Model") and cropSet[model.Name:lower()] and selectedTypes[model.Name] then
+            if model:IsA("Model") and selectedTypes[model.Name] then
                 local pp = getPP(model)
                 if pp then
                     local dist = (pp.Position - root.Position).Magnitude
@@ -129,12 +340,42 @@ local function update()
         table.sort(nearest, function(a,b) return a.dist < b.dist end)
 
         for i = 1, math.min(#nearest, maxESP) do
-            -- (ESP label creation remains unchanged)
+            local model = nearest[i].model
+
+            local weightObj = model:FindFirstChild("Weight")
+            local weight = weightObj and weightObj.Value and string.format("%.1f", weightObj.Value) or "?"
+
+            local cropInfo = cropSet[model.Name:lower()]
+            local rarity = cropInfo and cropInfo.rarity or "Common"
+            local color = rarityColors[rarity] or Color3.new(1,1,1)
+            local hexColor = string.format("#%02X%02X%02X", math.floor(color.r * 255), math.floor(color.g * 255), math.floor(color.b * 255))
+
+            local price
+            if CalculatePlantValue then
+                if typeof(CalculatePlantValue) == "table" and CalculatePlantValue.Calculate then
+                    price = CalculatePlantValue.Calculate(model)
+                elseif typeof(CalculatePlantValue) == "function" then
+                    price = CalculatePlantValue(model)
+                end
+            end
+
+            local formattedPrice = price and formatPriceWithCommas(price) or "?"
+
+            local label = string.format(
+                "<font color='%s'>%s</font> - %s kg - <font color='#50FF50'>%s</font>",
+                hexColor, model.Name, weight, formattedPrice
+            )
+
+            local espLabel = createESP(model, label)
+            if espLabel then
+                espLabel.RichText = true
+            end
+            validModels[model] = true
         end
     end
 
     cleanup(validModels)
-    updateNearbyPlants()
+    updateNearbyPlants() -- Force update nearby plants
 end
 
 -- === RUN EVERY SECOND ===
@@ -453,7 +694,6 @@ for i, labelName in ipairs(inputLabels) do
 
     table.insert(inputBoxes, box)
 end
-
 -- === TOGGLE BUTTONS WITH ANIMATION ===
 local function getCategorizedTypes()
     local cropsByCategory = {}
@@ -547,6 +787,14 @@ spawn(function()
         createToggles()
     end
 end)
+
+-- Initialize Selected Types
+for _, crop in ipairs(cropCategories.Obtainable.Common) do
+    selectedTypes[crop] = true
+end
+for _, crop in ipairs(cropCategories.Unobtainable.Common) do
+    selectedTypes[crop] = true
+end
 
 -- Toggle Button (Show/Hide UI)
 local function createToggleBtn(screenGui, frame)
