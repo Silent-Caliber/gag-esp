@@ -13,14 +13,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local maxDistance = 25
 local maxESP = 3
 local nearbyDistance = 15
-local updateInterval = 2.0
-local plantCheckDelay = 20
-local nearbyUpdateInterval = 0.9
+local updateInterval = 2.5
+local plantCheckDelay = 30
+local nearbyUpdateInterval = 1.8
 local maxNearbyPlants = 20
 
 -- === PERFORMANCE OPTIMIZATION ===
 local lastDescendantsUpdate = 0
-local cacheValidity = 15
+local cacheValidity = 25
 local lastNearbyUpdate = 0
 
 -- === NOTIFICATION SYSTEM ===
