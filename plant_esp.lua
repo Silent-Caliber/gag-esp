@@ -15,7 +15,7 @@ local maxESP = 3
 local nearbyDistance = 15
 local updateInterval = 2.0
 local plantCheckDelay = 15
-local nearbyUpdateInterval = 0.3  -- FASTER UPDATES (300ms)
+local nearbyUpdateInterval = 0.7
 local maxNearbyPlants = 20
 
 -- === PERFORMANCE OPTIMIZATION ===
